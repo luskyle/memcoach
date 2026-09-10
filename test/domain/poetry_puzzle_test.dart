@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shiyi/domain/poetry/poetry_puzzle.dart';
+import 'package:memcoach/domain/poetry/poetry_puzzle.dart';
 
 void main() {
   group('createBlanks', () {

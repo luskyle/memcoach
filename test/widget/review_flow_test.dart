@@ -4,13 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:shiyi/data/database/database.dart';
-import 'package:shiyi/data/repositories/item_repository.dart';
-import 'package:shiyi/data/repositories/review_repository.dart';
-import 'package:shiyi/data/settings/settings_store.dart';
-import 'package:shiyi/domain/srs/sm2.dart';
-import 'package:shiyi/features/review/review_session_screen.dart';
-import 'package:shiyi/providers.dart';
+import 'package:memcoach/data/database/database.dart';
+import 'package:memcoach/data/repositories/item_repository.dart';
+import 'package:memcoach/data/repositories/review_repository.dart';
+import 'package:memcoach/data/settings/settings_store.dart';
+import 'package:memcoach/domain/srs/sm2.dart';
+import 'package:memcoach/features/review/review_session_screen.dart';
+import 'package:memcoach/providers.dart';
 
 void main() {
   late ProviderContainer container;

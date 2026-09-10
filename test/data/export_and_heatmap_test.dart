@@ -4,10 +4,10 @@ import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shiyi/data/database/database.dart';
-import 'package:shiyi/data/export/export_service.dart';
-import 'package:shiyi/data/repositories/review_repository.dart';
-import 'package:shiyi/domain/srs/sm2.dart';
+import 'package:memcoach/data/database/database.dart';
+import 'package:memcoach/data/export/export_service.dart';
+import 'package:memcoach/data/repositories/review_repository.dart';
+import 'package:memcoach/domain/srs/sm2.dart';
 
 void main() {
   late AppDatabase db;

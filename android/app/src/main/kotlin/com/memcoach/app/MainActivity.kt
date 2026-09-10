@@ -1,4 +1,4 @@
-package com.shiyi.shiyi
+package com.memcoach.app
 
 import io.flutter.embedding.android.FlutterActivity
 

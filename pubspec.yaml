@@ -1,5 +1,5 @@
-name: shiyi
-description: Memcoach 记忆教练 —— 把你想记住的任何东西收进来，它会在对的时间提醒你复习。
+name: memcoach
+description: Memcoach 记忆教练 —— 间隔重复记忆训练（复习 / 记忆库 / 记忆集 / 学习插件）。
 publish_to: "none"
 version: 0.1.0+1
 

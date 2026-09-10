@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shiyi/data/analytics/analytics_service.dart';
+import 'package:memcoach/data/analytics/analytics_service.dart';
 
 void main() {
   group('埋点服务（内存模式）', () {

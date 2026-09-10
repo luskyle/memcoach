@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:shiyi/app.dart';
-import 'package:shiyi/data/database/database.dart';
-import 'package:shiyi/data/settings/settings_store.dart';
-import 'package:shiyi/features/settings/settings_screen.dart';
-import 'package:shiyi/providers.dart';
+import 'package:memcoach/app.dart';
+import 'package:memcoach/data/database/database.dart';
+import 'package:memcoach/data/settings/settings_store.dart';
+import 'package:memcoach/features/settings/settings_screen.dart';
+import 'package:memcoach/providers.dart';
 
 /// 测试环境公共搭建：内存库。
 Future<ProviderContainer> buildTestContainer() async {

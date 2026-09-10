@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shiyi/domain/srs/sm2.dart';
+import 'package:memcoach/domain/srs/sm2.dart';
 
 void main() {
   final now = DateTime(2026, 9, 7, 10, 0); // 固定时间，保证可复现

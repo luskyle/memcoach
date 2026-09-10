@@ -89,12 +89,12 @@ jobs:
       - run: flutter build linux --release
       - name: 打包 tar.gz
         run: |
-          tar -C build/linux/x64/release -czf shiyi-linux-x64.tar.gz bundle
-          ls -lh shiyi-linux-x64.tar.gz
+          tar -C build/linux/x64/release -czf memcoach-linux-x64.tar.gz bundle
+          ls -lh memcoach-linux-x64.tar.gz
       - uses: actions/upload-artifact@v4
         with:
           name: linux
-          path: shiyi-linux-x64.tar.gz
+          path: memcoach-linux-x64.tar.gz
 
   build-ios:
     name: 构建 iOS（未签名）
@@ -110,11 +110,11 @@ jobs:
       - name: 打包 Runner.app
         run: |
           cd build/ios/iphoneos
-          zip -qr ../../../shiyi-ios-unsigned.zip Runner.app
+          zip -qr ../../../memcoach-ios-unsigned.zip Runner.app
       - uses: actions/upload-artifact@v4
         with:
           name: ios
-          path: shiyi-ios-unsigned.zip
+          path: memcoach-ios-unsigned.zip
 
   release:
     name: 生成发布说明并发布 Release
@@ -156,7 +156,7 @@ jobs:
           if gh release view "$TAG" >/dev/null 2>&1; then
             # 标签已存在 → 更新说明并补充资产（重跑场景）
             gh release upload "$TAG" $ASSETS --clobber
-            gh release edit "$TAG" --title "拾忆 $TAG" --notes-file notes.md
+            gh release edit "$TAG" --title "Memcoach $TAG" --notes-file notes.md
           else
-            gh release create "$TAG" $ASSETS --title "拾忆 $TAG" --notes-file notes.md
+            gh release create "$TAG" $ASSETS --title "Memcoach $TAG" --notes-file notes.md
           fi

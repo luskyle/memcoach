@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shiyi/content/builtin_plugins.dart';
-import 'package:shiyi/content/content_plugin.dart';
+import 'package:memcoach/content/builtin_plugins.dart';
+import 'package:memcoach/content/content_plugin.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shiyi/data/dictionary/dictionary_service.dart';
+import 'package:memcoach/data/dictionary/dictionary_service.dart';
 
 const _sampleJson = '''
 {

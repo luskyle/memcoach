@@ -1,9 +1,9 @@
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shiyi/data/database/database.dart';
-import 'package:shiyi/data/repositories/item_repository.dart';
-import 'package:shiyi/data/repositories/memory_set_repository.dart';
-import 'package:shiyi/data/repositories/review_repository.dart';
+import 'package:memcoach/data/database/database.dart';
+import 'package:memcoach/data/repositories/item_repository.dart';
+import 'package:memcoach/data/repositories/memory_set_repository.dart';
+import 'package:memcoach/data/repositories/review_repository.dart';
 
 void main() {
   late AppDatabase db;

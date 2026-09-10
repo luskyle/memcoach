@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shiyi/domain/tagging/language.dart';
+import 'package:memcoach/domain/tagging/language.dart';
 
 void main() {
   group('detectLang', () {

@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shiyi/data/database/database.dart';
-import 'package:shiyi/data/dictionary/dictionary_service.dart';
-import 'package:shiyi/data/dictionary/language_catalog.dart';
-import 'package:shiyi/data/repositories/item_repository.dart';
-import 'package:shiyi/domain/study_plan.dart';
+import 'package:memcoach/data/database/database.dart';
+import 'package:memcoach/data/dictionary/dictionary_service.dart';
+import 'package:memcoach/data/dictionary/language_catalog.dart';
+import 'package:memcoach/data/repositories/item_repository.dart';
+import 'package:memcoach/domain/study_plan.dart';
 
 void main() {
   late AppDatabase db;
