@@ -1,8 +1,9 @@
 import 'package:drift/drift.dart';
 
+import '../../domain/srs/sm2.dart';
+import '../../domain/training.dart';
 import '../database/database.dart';
 import 'item_repository.dart';
-import '../../domain/srs/sm2.dart';
 
 /// 周视图统计点（遗忘曲线数据源，由 review_log 派生）。
 class WeeklyStat {
@@ -27,25 +28,42 @@ class ReviewRepository {
 
   final AppDatabase db;
 
-  /// 今日复习队列：所有到期卡（含积压），按到期时间升序，封顶 200。
-  /// [memorySetId] 非空时仅返回该记忆集内的条目（记忆管理复习）。
-  Future<List<CardWithItem>> dueCards(
-      {DateTime? now, int limit = 200, int? memorySetId}) async {
+  /// 到期复习卡：dueAt <= now（含积压），按到期时间升序，封顶 [limit]。
+  Future<List<CardWithItem>> dueCards({
+    DateTime? now,
+    int limit = 200,
+  }) async {
     final ts = now ?? DateTime.now();
     final q = db.select(db.cards).join([
       innerJoin(db.items, db.items.cardId.equalsExp(db.cards.id)),
-      if (memorySetId != null)
-        innerJoin(
-            db.memorySetItems, db.memorySetItems.itemId.equalsExp(db.items.id)),
     ])
-      ..where([
-        if (memorySetId != null)
-          db.memorySetItems.memorySetId.equals(memorySetId)
-      ].fold(
-          db.items.cardId.isNotNull() &
-              db.cards.dueAt.isSmallerOrEqualValue(ts),
-          (a, e) => a & e))
+      ..where(db.items.cardId.isNotNull() &
+          db.cards.dueAt.isSmallerOrEqualValue(ts))
       ..orderBy([OrderingTerm.asc(db.cards.dueAt)])
+      ..limit(limit);
+    final rows = await q.get();
+    return rows
+        .map((r) => CardWithItem(
+              card: r.readTable(db.cards),
+              item: r.readTable(db.items),
+            ))
+        .toList();
+  }
+
+  /// 新卡：尚未训练过（lastReviewedAt 为空）且未到期（dueAt 在未来），
+  /// 按创建时间升序。训练会话据此引入下载训练集的新内容，
+  /// 与「到期复习卡」互斥，避免同卡重复入队。
+  Future<List<CardWithItem>> newCards({
+    DateTime? now,
+    int limit = 30,
+  }) async {
+    final ts = now ?? DateTime.now();
+    final q = db.select(db.cards).join([
+      innerJoin(db.items, db.items.cardId.equalsExp(db.cards.id)),
+    ])
+      ..where(db.cards.lastReviewedAt.isNull() &
+          db.cards.dueAt.isBiggerThanValue(ts))
+      ..orderBy([OrderingTerm.asc(db.cards.createdAt)])
       ..limit(limit);
     final rows = await q.get();
     return rows
@@ -83,9 +101,12 @@ class ReviewRepository {
   }
 
   /// 一次评级落库：SM-2 更新 + 追加 review_log（append-only）+ 条目状态投影刷新。
+  ///
+  /// [intervalMultiplier]：训练强度带来的间隔增幅（>1 更快，<1 更保守）。
   Future<void> reviewCard({
     required int cardId,
     required ReviewRating rating,
+    double intervalMultiplier = 1.0,
     DateTime? now,
   }) async {
     final ts = now ?? DateTime.now();
@@ -110,12 +131,17 @@ class ReviewRepository {
       now: ts,
     );
 
+    // 强度增幅作用于间隔（不影响 EF 与重复次数）
+    final intervalDays =
+        applyIntervalMultiplier(result.state.intervalDays, intervalMultiplier);
+    final dueAt = ts.add(Duration(days: intervalDays));
+
     await (db.update(db.cards)..where((t) => t.id.equals(cardId))).write(
       CardsCompanion(
         repetitions: Value(result.state.repetitions),
         easeFactor: Value(result.state.easeFactor),
-        intervalDays: Value(result.state.intervalDays),
-        dueAt: Value(result.dueAt),
+        intervalDays: Value(intervalDays),
+        dueAt: Value(dueAt),
         lastReviewedAt: Value(ts),
       ),
     );
@@ -125,14 +151,15 @@ class ReviewRepository {
             cardId: cardId,
             reviewedAt: ts,
             quality: quality,
-            intervalDays: result.state.intervalDays,
+            intervalDays: intervalDays,
             easeFactor: result.state.easeFactor,
             state: preState,
           ),
         );
 
     // 条目状态投影刷新（mastered / cold / learning）
-    final newStatus = _projectStatus(result.state, lastReviewedAt: ts, now: ts);
+    final state = result.state.copyWith(intervalDays: intervalDays);
+    final newStatus = _projectStatus(state, lastReviewedAt: ts, now: ts);
     final itemRows = await (db.select(db.items)
           ..where((t) => t.cardId.equals(cardId)))
         .get();
@@ -143,7 +170,7 @@ class ReviewRepository {
     assert(itemRows.isNotEmpty, 'card has no item (unreachable)');
   }
 
-  /// 状态投影（依据《拾忆App架构》§五：状态从数据派生，实时计算）。
+  /// 状态投影（依据《记忆教练App架构》§五：状态从数据派生，实时计算）。
   String _projectStatus(Sm2State state,
       {required DateTime lastReviewedAt, required DateTime now}) {
     if (isMastered(state)) return 'mastered';

@@ -4,22 +4,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/analytics/analytics_service.dart';
 import '../../data/repositories/item_repository.dart';
 import '../../domain/srs/sm2.dart';
+import '../../domain/training.dart';
 import '../../providers.dart';
 import 'curve_screen.dart';
 
-/// 复习会话：闪卡先猜后看 + 三键评级（忘了/模糊/记得）。
+/// 训练会话：混合「新卡（已下载训练集引入）+ 到期复习卡」，
+/// 闪卡先猜后看 + 三键评级（忘了/模糊/记得）。
 ///
-/// - 评级即时落库（SM-2 更新 + review_log 追加），中途退出自动保存进度；
-/// - 免费额度：非 Pro 每日 30 次评级，超限引导订阅（不打断复习中，结束时提示）。
-class ReviewSessionScreen extends ConsumerStatefulWidget {
-  const ReviewSessionScreen({super.key});
+/// 强度决定本轮题量、新卡占比、SM-2 间隔增幅与时长上限。
+class TrainingSessionScreen extends ConsumerStatefulWidget {
+  const TrainingSessionScreen({super.key});
 
   @override
-  ConsumerState<ReviewSessionScreen> createState() =>
-      _ReviewSessionScreenState();
+  ConsumerState<TrainingSessionScreen> createState() =>
+      _TrainingSessionScreenState();
 }
 
-class _ReviewSessionScreenState extends ConsumerState<ReviewSessionScreen> {
+class _TrainingSessionScreenState extends ConsumerState<TrainingSessionScreen> {
   static const _groupSize = 6; // 卡片墙：一屏一组
 
   List<CardWithItem> _queue = const [];
@@ -27,22 +28,57 @@ class _ReviewSessionScreenState extends ConsumerState<ReviewSessionScreen> {
   final Set<int> _groupRated = {}; // 当前组内已评级卡（组内相对下标）
   int _answered = 0;
   int _qualitySum = 0;
+  late final DateTime _startedAt;
   bool _loading = true;
   bool _finished = false;
+
+  TrainingIntensity get _intensity =>
+      ref.read(trainingIntensityProvider) ?? TrainingIntensity.medium;
+
+  IntensityPreset get _preset => intensityPreset(_intensity);
 
   @override
   void initState() {
     super.initState();
+    _startedAt = DateTime.now();
     _load();
   }
 
+  /// 组队：确保有足够新卡后，按强度比例取「新卡 + 到期卡」。
   Future<void> _load() async {
-    final repo = ref.read(reviewRepositoryProvider);
-    final cards = await repo.dueCards();
+    final preset = _preset;
+    final reviewRepo = ref.read(reviewRepositoryProvider);
+    final setRepo = ref.read(trainingSetRepositoryProvider);
 
+    // 1. 从已下载训练集补足新卡（引入即成为可训练卡片）
+    var needNew = preset.newCardTarget();
+    final existingNew = await reviewRepo.newCards(limit: preset.cardCount);
+    needNew -= existingNew.length;
+    if (needNew > 0) {
+      final installedIds =
+          await ref.read(trainingSetRepositoryProvider).installedIds();
+      if (installedIds.isNotEmpty) {
+        final catalog = await ref.read(trainingSetSourceProvider).catalog();
+        for (final p in catalog) {
+          if (needNew <= 0) break;
+          if (!installedIds.contains(p.id)) continue;
+          final imported = await setRepo.importItems(p, needNew);
+          needNew -= imported;
+        }
+      }
+    }
+
+    // 2. 取新卡 + 到期卡，封顶 cardCount
+    final newCards =
+        await reviewRepo.newCards(limit: preset.newCardTarget());
+    final reviewTarget =
+        (preset.cardCount - newCards.length).clamp(0, preset.cardCount);
+    final due = await reviewRepo.dueCards(limit: reviewTarget);
+
+    final queue = <CardWithItem>[...newCards, ...due];
     setState(() {
-      _queue = cards;
-      _finished = cards.isEmpty;
+      _queue = queue;
+      _finished = queue.isEmpty;
       _loading = false;
     });
   }
@@ -53,7 +89,7 @@ class _ReviewSessionScreenState extends ConsumerState<ReviewSessionScreen> {
         (_groupStart + _groupSize).clamp(0, _queue.length),
       );
 
-  /// 评级并落库；组内全部评完自动切下一组。
+  /// 评级并落库（SM-2 更新 + 强度间隔增幅）；组内评完自动切下一组。
   Future<void> _rate(int localIndex, ReviewRating rating) async {
     final card = _queue[_groupStart + localIndex].card;
     final quality = sm2QualityFor(rating);
@@ -64,6 +100,7 @@ class _ReviewSessionScreenState extends ConsumerState<ReviewSessionScreen> {
     await ref.read(reviewRepositoryProvider).reviewCard(
           cardId: card.id,
           rating: rating,
+          intervalMultiplier: _preset.intervalMultiplier,
         );
     setState(() {
       _answered += 1;
@@ -83,9 +120,7 @@ class _ReviewSessionScreenState extends ConsumerState<ReviewSessionScreen> {
     setState(() {
       _groupStart += _groupSize;
       _groupRated.clear();
-      if (completed) {
-        _finished = true;
-      }
+      if (completed) _finished = true;
     });
     if (completed) {
       ref.read(analyticsProvider).track(
@@ -106,18 +141,58 @@ class _ReviewSessionScreenState extends ConsumerState<ReviewSessionScreen> {
 
     final group = _group;
     final progress = _queue.isEmpty ? 0.0 : _answered / _queue.length;
+    final elapsed = DateTime.now().difference(_startedAt);
+    final overCap = elapsed.inMinutes >= _preset.durationCapMinutes;
 
     return Scaffold(
-      appBar: AppBar(title: Text('复习 · $_answered/${_queue.length}')),
+      appBar: AppBar(
+        title: Text('训练 · $_answered/${_queue.length}'),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(3),
+          child: LinearProgressIndicator(
+              value: progress, borderRadius: BorderRadius.circular(4)),
+        ),
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              LinearProgressIndicator(
-                  value: progress, borderRadius: BorderRadius.circular(4)),
-              const SizedBox(height: 16),
-              // 卡片墙：一屏一组，每张独立翻转 + 评级
+              Row(
+                children: [
+                  Icon(
+                    Icons.fitness_center,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${intensityModeLabel(_intensity)} · '
+                    '上限 ${_preset.durationCapMinutes} 分钟 · '
+                    '已用时 ${elapsed.inMinutes}:${(elapsed.inSeconds % 60).toString().padLeft(2, '0')}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ],
+              ),
+              if (overCap) ...[
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0x1AFF9500),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Text(
+                    '已达本轮时长上限，可继续练完或返回休息',
+                    style: TextStyle(fontSize: 12),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
               Expanded(
                 child: Center(
                   child: ConstrainedBox(
@@ -161,8 +236,44 @@ class _ReviewSessionScreenState extends ConsumerState<ReviewSessionScreen> {
   Widget _buildCompletion() {
     final avgQuality = _answered == 0 ? 0.0 : _qualitySum / _answered;
     final summary = _answered == 0
-        ? '今天没有到期的卡片'
+        ? '没有可训练内容'
         : '完成 $_answered 张 · 平均评级 ${avgQuality.toStringAsFixed(1)}/5';
+
+    if (_answered == 0) {
+      // 没有可训练内容：引导去社区下载训练集
+      return Scaffold(
+        appBar: AppBar(automaticallyImplyLeading: false),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.explore_off, size: 64, color: Colors.grey),
+                const SizedBox(height: 16),
+                Text(
+                  '还没有可训练的内容',
+                  style: Theme.of(context)
+                      .textTheme
+                      .headlineSmall
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  '去「社区」下载你感兴趣的训练集，\n就能开始训练了。',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('返回'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(automaticallyImplyLeading: false),
@@ -175,7 +286,7 @@ class _ReviewSessionScreenState extends ConsumerState<ReviewSessionScreen> {
               const Icon(Icons.task_alt, size: 64, color: Colors.green),
               const SizedBox(height: 16),
               Text(
-                _answered == 0 ? '暂无任务' : '今日复习完成',
+                '本轮训练完成',
                 style: Theme.of(context)
                     .textTheme
                     .headlineSmall
@@ -261,7 +372,6 @@ class _WallCardState extends State<_WallCard> {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // 条件渲染（无动画切换，规避动画中重建的渲染断言）
               if (_flipped) _back() else _front(),
               if (widget.rated)
                 Container(

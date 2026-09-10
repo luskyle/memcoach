@@ -1,5 +1,25 @@
 # Project-level configuration.
 cmake_minimum_required(VERSION 3.13)
+
+# flutter-clang 的 clang++ 无法自动定位系统 GCC 的 libstdc++，导致 CMake
+# 在 project() 编译器自检阶段以及各目标（可执行 runner / 插件共享库）链接时报
+# 「找不到 -lstdc++」。必须在 project() 之前把链接搜索路径写入各类 LINKER_FLAGS，
+# 编译器自检的 try_compile 与后续所有链接步骤才会继承它。
+foreach(_libstdcxx_dir "/usr/lib/gcc/x86_64-linux-gnu/11")
+  if(EXISTS "${_libstdcxx_dir}/libstdc++.so")
+    foreach(_flag_var
+        CMAKE_EXE_LINKER_FLAGS
+        CMAKE_SHARED_LINKER_FLAGS
+        CMAKE_MODULE_LINKER_FLAGS)
+      if(NOT "${${_flag_var}}" MATCHES "${_libstdcxx_dir}")
+        set(${_flag_var} "-L${_libstdcxx_dir} ${${_flag_var}}" CACHE STRING "" FORCE)
+      endif()
+    endforeach()
+  endif()
+endforeach()
+unset(_libstdcxx_dir)
+unset(_flag_var)
+
 project(runner LANGUAGES CXX)
 
 # 校准 C++ 标准库头文件路径：flutter-clang 固定查找 gcc-12 的

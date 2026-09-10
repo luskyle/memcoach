@@ -13,7 +13,7 @@ class Words extends Table {
   TextColumn get tags => text().nullable()();
 }
 
-/// 卡片（SRS 对象，复习引擎的调度单元）
+/// 卡片（SRS 对象，训练引擎的调度单元）
 @DataClassName('CardRow')
 class Cards extends Table {
   IntColumn get id => integer().autoIncrement()();
@@ -21,17 +21,23 @@ class Cards extends Table {
       .nullable()
       .references(Words, #id, onDelete: KeyAction.setNull)();
 
-  /// 卡种：word | quote | idea | clip
+  /// 卡种：word | quote | idea | clip | flashcard | quiz | cloze
   TextColumn get kind => text().withDefault(const Constant('word'))();
   TextColumn get prompt => text()();
   TextColumn get answer => text()();
   TextColumn get audioFile => text().nullable()();
 
-  /// 语言标签（自动标注，复习过滤用）
+  /// 语言标签（自动标注，训练过滤用）
   TextColumn get lang => text().nullable()();
 
   /// 冗余标签（搜索增强）
   TextColumn get tags => text().nullable()();
+
+  /// 所属训练集（若此卡由「社区 → 下载训练集」引入）
+  TextColumn get trainingSetId => text().nullable()();
+
+  /// 训练集内条目下标（训练集引入去重用）
+  IntColumn get trainingItemIndex => integer().nullable()();
 
   // ---- SRS 调度状态（SM-2）----
   IntColumn get repetitions => integer().withDefault(const Constant(0))();
@@ -52,7 +58,7 @@ class Items extends Table {
       .nullable()
       .references(Cards, #id, onDelete: KeyAction.setNull)();
 
-  /// 来源：share | manual | study | memory_set
+  /// 来源：share | manual | study | training_set
   TextColumn get source => text().withDefault(const Constant('manual'))();
   TextColumn get mediaPath => text().nullable()();
   TextColumn get originalUrl => text().nullable()();
@@ -89,30 +95,6 @@ class ReviewLogs extends Table {
   TextColumn get source => text().withDefault(const Constant('review'))();
 }
 
-/// 库 / 子集（三层分类：库 Collection → 子集 Series → 条目 Item，MVP 实现两层）
-@DataClassName('CollectionRow')
-class Collections extends Table {
-  IntColumn get id => integer().autoIncrement()();
-  TextColumn get name => text()();
-  IntColumn get parentId => integer().nullable().references(Collections, #id)();
-  IntColumn get ownerId => integer().nullable()();
-  BoolColumn get isSystem => boolean().withDefault(const Constant(false))();
-  DateTimeColumn get createdAt => dateTime()();
-}
-
-/// 条目-库 多对多（主库标记决定默认归属视图）
-@DataClassName('ItemCollectionRow')
-class ItemCollections extends Table {
-  IntColumn get itemId =>
-      integer().references(Items, #id, onDelete: KeyAction.cascade)();
-  IntColumn get collectionId =>
-      integer().references(Collections, #id, onDelete: KeyAction.cascade)();
-  BoolColumn get isPrimary => boolean().withDefault(const Constant(false))();
-
-  @override
-  Set<Column<Object>> get primaryKey => {itemId, collectionId};
-}
-
 /// 条目标签（多标签交叉，搜索增强）
 @DataClassName('ItemTagRow')
 class ItemTags extends Table {
@@ -124,28 +106,19 @@ class ItemTags extends Table {
   Set<Column<Object>> get primaryKey => {itemId, tag};
 }
 
-/// 记忆集（记忆教练：用户自建的复习集合）：
-/// 一个记忆集 = 一组收藏条目（卡片），可对集合整体学习/复习/回顾。
-@DataClassName('MemorySetRow')
-class MemorySets extends Table {
-  IntColumn get id => integer().autoIncrement()();
-
+/// 已下载训练集：社区目录中「下载」后记录安装状态。
+/// 训练集条目在训练时按需引入为 Cards（source='training_set'）。
+@DataClassName('TrainingSetRow')
+class TrainingSets extends Table {
+  /// 目录 id（与内置 / 远程来源的 ContentPlugin.id 一致）。
+  TextColumn get id => text()();
   TextColumn get name => text()();
+  TextColumn get description => text()();
 
-  /// 集合用途/说明
-  TextColumn get purpose => text().nullable()();
-
-  DateTimeColumn get createdAt => dateTime()();
-}
-
-/// 记忆集条目（收藏条目 → 记忆集 多对多）。
-@DataClassName('MemorySetItemRow')
-class MemorySetItems extends Table {
-  IntColumn get memorySetId =>
-      integer().references(MemorySets, #id, onDelete: KeyAction.cascade)();
-  IntColumn get itemId =>
-      integer().references(Items, #id, onDelete: KeyAction.cascade)();
+  /// 训练类型：flashcard | quiz | cloze
+  TextColumn get kind => text()();
+  DateTimeColumn get installedAt => dateTime()();
 
   @override
-  Set<Column<Object>> get primaryKey => {memorySetId, itemId};
+  Set<Column<Object>> get primaryKey => {id};
 }

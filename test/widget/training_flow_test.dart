@@ -9,7 +9,8 @@ import 'package:memcoach/data/repositories/item_repository.dart';
 import 'package:memcoach/data/repositories/review_repository.dart';
 import 'package:memcoach/data/settings/settings_store.dart';
 import 'package:memcoach/domain/srs/sm2.dart';
-import 'package:memcoach/features/review/review_session_screen.dart';
+import 'package:memcoach/domain/training.dart';
+import 'package:memcoach/features/training/training_session_screen.dart';
 import 'package:memcoach/providers.dart';
 
 void main() {
@@ -26,6 +27,7 @@ void main() {
         databaseProvider.overrideWithValue(db),
         sharedPrefsProvider.overrideWithValue(prefs),
         settingsProvider.overrideWithValue(SettingsStore(prefs)),
+        trainingIntensityProvider.overrideWith((ref) => TrainingIntensity.medium),
       ],
     );
     reviewRepo = ReviewRepository(db);
@@ -61,13 +63,13 @@ void main() {
     return cardId;
   }
 
-  testWidgets('复习闭环：翻卡 → 评级「记得」→ 完成页 → 日志与间隔更新', (tester) async {
+  testWidgets('训练闭环：翻卡 → 评级「记得」→ 完成页 → 日志与间隔更新', (tester) async {
     final cardId = await seedDueCard();
 
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const MaterialApp(home: ReviewSessionScreen()),
+        child: const MaterialApp(home: TrainingSessionScreen()),
       ),
     );
     await tester.pumpAndSettle();
@@ -87,7 +89,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // 完成页
-    expect(find.text('今日复习完成'), findsOneWidget);
+    expect(find.text('本轮训练完成'), findsOneWidget);
 
     // 落库校验：review_log 追加 + SM-2 状态更新
     final logs = await (db.select(db.reviewLogs)
@@ -102,6 +104,18 @@ void main() {
     expect(card.repetitions, 1);
     expect(card.intervalDays, 1);
     expect(card.lastReviewedAt, isNotNull);
+  });
+
+  testWidgets('没有可训练内容时，引导去社区下载训练集', (tester) async {
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: TrainingSessionScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('还没有可训练的内容'), findsOneWidget);
   });
 
   testWidgets('答错走重学路径：repetitions 归零、间隔回到 1 天', (tester) async {
@@ -157,7 +171,8 @@ void main() {
       final card = await (db.select(db.cards)
             ..where((t) => t.id.equals(cardId)))
           .getSingle();
-      await reviewRepo.reviewCard(cardId: cardId, rating: ReviewRating.remembered, now: t);
+      await reviewRepo.reviewCard(
+          cardId: cardId, rating: ReviewRating.remembered, now: t);
       t = t.add(Duration(days: card.intervalDays + 1));
     }
     final item2 = await (db.select(db.items)..where((t) => t.id.equals(itemId)))

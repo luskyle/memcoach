@@ -53,7 +53,7 @@ async function saveSelection() {
   if (!cfg.url) { setMsg('请先配置 WebDAV', false); $('settingsBox').open = true; return; }
   try {
     const snap = (await davGet(cfg)) || {
-      app: 'shiyi', version: '0.1.0', exported_at: new Date().toISOString(),
+      app: 'memcoach', version: '0.1.0', exported_at: new Date().toISOString(),
       rows: { collections: lastCollections, items: [], cards: [],
               review_logs: [], item_collections: [], item_tags: [] },
     };

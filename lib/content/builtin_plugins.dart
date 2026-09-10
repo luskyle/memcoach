@@ -114,3 +114,27 @@ class ContentRegistry {
     );
   }
 }
+
+/// 训练集目录来源（社区）。
+///
+/// 当前为内置来源；未来接远程服务器时实现 [RemoteTrainingSetSource] 即可，
+/// 社区界面与训练流程无需改动。
+abstract class TrainingSetSource {
+  Future<List<ContentPlugin>> catalog();
+}
+
+/// 内置目录（App 打包的资产）。
+class BuiltinTrainingSetSource implements TrainingSetSource {
+  const BuiltinTrainingSetSource();
+
+  @override
+  Future<List<ContentPlugin>> catalog() => ContentRegistry.builtin();
+}
+
+/// 远程目录（预留接口，尚未接入后端）。
+class RemoteTrainingSetSource implements TrainingSetSource {
+  const RemoteTrainingSetSource();
+
+  @override
+  Future<List<ContentPlugin>> catalog() async => const <ContentPlugin>[];
+}

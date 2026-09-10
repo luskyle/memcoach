@@ -5,21 +5,124 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../content/content_plugin.dart';
 import '../../domain/poetry/poetry_puzzle.dart';
+import '../../providers.dart';
 
-/// 内容插件统一播放器：按插件玩法（翻卡 / 单选 / 填空）分发渲染。
-/// 逐题推进 + 进度条 + 完成页统计；自评 / 答题结果不自动入 SRS
-/// （未来可接「加入记忆库」）。
-class ContentPlayerScreen extends ConsumerStatefulWidget {
-  const ContentPlayerScreen({super.key, required this.plugin});
+/// 训练集详情：介绍 + 下载训练集 → 之后在「训练」里练习；可先试玩。
+class TrainingSetDetailScreen extends ConsumerWidget {
+  const TrainingSetDetailScreen({super.key, required this.plugin});
 
   final ContentPlugin plugin;
 
   @override
-  ConsumerState<ContentPlayerScreen> createState() =>
-      _ContentPlayerScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final installedIds =
+        ref.watch(installedTrainingSetIdsProvider).valueOrNull ??
+            const <String>{};
+    final installed = installedIds.contains(plugin.id);
+    final scheme = Theme.of(context).colorScheme;
+    final (icon, tag) = switch (plugin.kind) {
+      ContentKind.flashcard => (Icons.style_outlined, '翻卡'),
+      ContentKind.quiz => (Icons.quiz_outlined, '单选'),
+      ContentKind.cloze => (Icons.auto_stories, '填空'),
+    };
+
+    return Scaffold(
+      appBar: AppBar(title: Text(plugin.name)),
+      body: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: scheme.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(icon, size: 28, color: scheme.primary),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      plugin.name,
+                      style: Theme.of(context)
+                          .textTheme
+                          .headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 4),
+                    Text('类型：$tag · 共 ${plugin.items.length} 项',
+                        style: TextStyle(
+                            fontSize: 12, color: scheme.onSurfaceVariant)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(plugin.description,
+              style: const TextStyle(fontSize: 14, height: 1.5)),
+          const SizedBox(height: 20),
+          FilledButton.icon(
+            onPressed: installed
+                ? null
+                : () async {
+                    await ref
+                        .read(trainingSetRepositoryProvider)
+                        .install(plugin);
+                    ref.invalidate(installedTrainingSetIdsProvider);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('已下载「${plugin.name}」，去「训练」开始练习'),
+                        ),
+                      );
+                    }
+                  },
+            icon: Icon(installed ? Icons.check_circle : Icons.download),
+            label: Text(installed ? '已下载' : '下载训练集'),
+          ),
+          if (installed) ...[
+            const SizedBox(height: 8),
+            Text(
+              '已下载：训练时会按你的强度逐步引入这些卡片',
+              style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+            ),
+          ],
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => TrainingSetPlayScreen(plugin: plugin),
+              ),
+            ),
+            icon: const Icon(Icons.play_circle_outline),
+            label: const Text('试玩'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-class _ContentPlayerScreenState extends ConsumerState<ContentPlayerScreen> {
+/// 训练集统一播放器（试玩 / 预览）：按玩法（翻卡 / 单选 / 填空）分发渲染。
+/// 逐题推进 + 进度条 + 完成页；试玩结果不入 SRS。
+class TrainingSetPlayScreen extends ConsumerStatefulWidget {
+  const TrainingSetPlayScreen({super.key, required this.plugin});
+
+  final ContentPlugin plugin;
+
+  @override
+  ConsumerState<TrainingSetPlayScreen> createState() =>
+      _TrainingSetPlayScreenState();
+}
+
+class _TrainingSetPlayScreenState extends ConsumerState<TrainingSetPlayScreen> {
   int _index = 0;
   int _score = 0;
   bool _flipped = false; // flashcard 翻面
@@ -58,16 +161,12 @@ class _ContentPlayerScreenState extends ConsumerState<ContentPlayerScreen> {
     _blankCtrls.clear();
   }
 
-  // ---- 翻卡自评 ----
-
   void _rateFlashcard(int score) {
     setState(() {
       _score += score;
       _advance();
     });
   }
-
-  // ---- 单选 ----
 
   void _pickQuiz(int i) {
     if (_selected != null) return;
@@ -86,9 +185,6 @@ class _ContentPlayerScreenState extends ConsumerState<ContentPlayerScreen> {
     });
   }
 
-  // ---- 填空 ----
-
-  /// 同步生成当前项的挖空空位（调用方负责 setState 触发重建）。
   void _initCloze() {
     _disposeBlankCtrl();
     final item = _items[_index] as ClozeItem;
@@ -120,7 +216,7 @@ class _ContentPlayerScreenState extends ConsumerState<ContentPlayerScreen> {
   }
 
   void _clozeToScore() {
-    setState(_advance); // 下一项若是填空，_advance 内同步初始化
+    setState(_advance);
   }
 
   void _advance() {
@@ -130,7 +226,7 @@ class _ContentPlayerScreenState extends ConsumerState<ContentPlayerScreen> {
     } else {
       _index += 1;
       if (_items[_index] is ClozeItem) {
-        _initCloze(); // 同步生成空位，build 时即可渲染
+        _initCloze();
       }
     }
   }
@@ -173,7 +269,6 @@ class _ContentPlayerScreenState extends ConsumerState<ContentPlayerScreen> {
             Expanded(
               child: Center(
                 child: switch (_plugin.kind) {
-                  // 翻卡：CardFace 内含 Expanded，需紧有界高度，不走滚动容器
                   ContentKind.flashcard => ConstrainedBox(
                       constraints: const BoxConstraints(
                         maxWidth: 640,
@@ -205,13 +300,10 @@ class _ContentPlayerScreenState extends ConsumerState<ContentPlayerScreen> {
     );
   }
 
-  // ---- 翻卡玩法 ----
-
   Widget _buildFlashcard(FlashcardItem item) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // 简单翻转：无 3D Transform，规避动画中重建的渲染断言
         GestureDetector(
           onTap: () => setState(() => _flipped = !_flipped),
           child: AnimatedSwitcher(
@@ -308,8 +400,6 @@ class _ContentPlayerScreenState extends ConsumerState<ContentPlayerScreen> {
     );
   }
 
-  // ---- 单选玩法 ----
-
   Widget _buildQuiz(QuizItem item) {
     final scheme = Theme.of(context).colorScheme;
     return Column(
@@ -359,8 +449,6 @@ class _ContentPlayerScreenState extends ConsumerState<ContentPlayerScreen> {
       ],
     );
   }
-
-  // ---- 填空玩法 ----
 
   Widget _buildCloze(ClozeItem item) {
     final scheme = Theme.of(context).colorScheme;
@@ -433,9 +521,7 @@ class _ContentPlayerScreenState extends ConsumerState<ContentPlayerScreen> {
 
   Widget _buildCompletion() {
     final total = _items.length;
-    final avg = total == 0
-        ? 0.0
-        : _score / total; // cloze 按空计、quiz 按题计，flashcard 满分 2
+    final avg = total == 0 ? 0.0 : _score / total;
     final pct = (avg / 2 * 100).clamp(0, 100).toStringAsFixed(0);
     return Scaffold(
       appBar: AppBar(automaticallyImplyLeading: false),

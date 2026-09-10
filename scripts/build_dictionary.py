@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""JMDict + tanos JLPT 词表 → 拾忆离线词库 JSON（N5~N4 + 五十音表）。
+"""JMDict + tanos JLPT 词表 → 记忆教练离线词库 JSON（N5~N4 + 五十音表）。
 
 数据源（均为免费可商用/社区公开）：
 - tanos.co.uk JLPT 词表（kanji+reading，分级权威）——

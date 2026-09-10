@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-/// 拾忆主题：参考 Apple 人机界面指南（HIG）的 iOS 视觉语言。
+/// 记忆教练主题：参考 Apple 人机界面指南（HIG）的 iOS 视觉语言。
 ///
 /// - 清晰：系统字体层级、label/secondaryLabel 对比度、大圆角卡片
 /// - 遵循惯例：系统蓝 #007AFF、层级灰/白背景、hairline 分隔、系统控件形态

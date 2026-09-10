@@ -31,13 +31,13 @@ class SettingsScreen extends ConsumerWidget {
                     loading: () => const Text('…'),
                     error: (_, __) => const Text('升级解锁无限额度'),
                     data: (q) => Text(q.isPro
-                        ? '已解锁：无限复习 · 无限卡片'
-                        : '免费版：无限复习 · 卡片库 100 张'),
+                        ? '已解锁：无限训练 · 无限卡片'
+                        : '免费版：无限训练 · 卡片 100 张'),
                   ),
                   trailing: FilledButton.tonal(
                     onPressed: () => PaywallSheet.show(
                       context: context,
-                      reason: '解锁无限复习与无限卡片库',
+                      reason: '解锁无限训练与无限卡片',
                     ),
                     child: const Text('升级'),
                   ),
@@ -52,8 +52,8 @@ class SettingsScreen extends ConsumerWidget {
                     data: (q) => Text(
                       q.isPro
                           ? '无限'
-                          : '已复习 ${q.reviewsToday} 次 · '
-                              '记忆库 ${q.libraryCards}/${Quota.maxLibraryCards} 张',
+                          : '已训练 ${q.reviewsToday} 次 · '
+                              '卡片 ${q.libraryCards}/${Quota.maxLibraryCards} 张',
                     ),
                   ),
                 ),
@@ -114,7 +114,7 @@ class SettingsScreen extends ConsumerWidget {
               children: [
                 ListTile(
                   leading: const Icon(Icons.file_download_outlined),
-                  title: const Text('导出我的卡片库'),
+                  title: const Text('导出我的数据'),
                   subtitle: const Text('元数据 + 复习日志 → 本地 zip（JSON 机器可读）'),
                   onTap: () async {
                     final messenger = ScaffoldMessenger.of(context);
@@ -144,7 +144,7 @@ class SettingsScreen extends ConsumerWidget {
                     applicationVersion: '0.2.0',
                     children: const [
                       Text(
-                        '· 复习与学习数据默认仅保存在本机\n'
+                        '· 训练数据默认仅保存在本机\n'
                         '· 所有生成内容均可编辑、可删除\n'
                         '· 导出 / 删除即删，随时拿回数据',
                       ),
@@ -159,7 +159,7 @@ class SettingsScreen extends ConsumerWidget {
             child: ListTile(
               leading: Icon(Icons.info_outline),
               title: Text('关于 Memcoach'),
-              subtitle: Text('你的记忆教练：把想记住的东西收进来，在对的时间提醒你复习。'),
+              subtitle: Text('你的记忆教练：把想记住的东西收进来，在对的时间提醒你训练。'),
             ),
           ),
         ],

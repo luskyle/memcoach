@@ -4,10 +4,35 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:memcoach/app.dart';
+import 'package:memcoach/content/builtin_plugins.dart';
+import 'package:memcoach/content/content_plugin.dart';
 import 'package:memcoach/data/database/database.dart';
 import 'package:memcoach/data/settings/settings_store.dart';
 import 'package:memcoach/features/settings/settings_screen.dart';
 import 'package:memcoach/providers.dart';
+
+/// 测试用假目录：不读资产，避免 testWidgets 下 rootBundle 无法被 settle。
+class _FakeTrainingSetSource implements TrainingSetSource {
+  const _FakeTrainingSetSource();
+
+  @override
+  Future<List<ContentPlugin>> catalog() async => const [
+        ContentPlugin(
+          id: 'test.poetry',
+          name: '古诗词',
+          description: '经典古诗挖空',
+          kind: ContentKind.cloze,
+          items: [],
+        ),
+        ContentPlugin(
+          id: 'test.quiz',
+          name: '趣味常识',
+          description: '常识单选',
+          kind: ContentKind.quiz,
+          items: [],
+        ),
+      ];
+}
 
 /// 测试环境公共搭建：内存库。
 Future<ProviderContainer> buildTestContainer() async {
@@ -18,15 +43,18 @@ Future<ProviderContainer> buildTestContainer() async {
       databaseProvider.overrideWithValue(AppDatabase.forTesting()),
       sharedPrefsProvider.overrideWithValue(prefs),
       settingsProvider.overrideWithValue(SettingsStore(prefs)),
+      trainingSetSourceProvider.overrideWithValue(
+        const _FakeTrainingSetSource(),
+      ),
     ],
   );
-  // 触发一次数据库初始化（完成系统库种子）
+  // 触发一次数据库初始化
   container.read(databaseProvider);
   return container;
 }
 
 void main() {
-  testWidgets('三 Tab 导航与空态', (tester) async {
+  testWidgets('两 Tab 导航与默认训练页', (tester) async {
     final container = await buildTestContainer();
     addTearDown(container.dispose);
 
@@ -38,45 +66,19 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // 默认落点 = 复习页（设计原则 2）
-    expect(find.text('今日复习'), findsOneWidget);
-    expect(find.text('今天还没有复习任务'), findsOneWidget);
+    // 默认落点 = 训练页
+    expect(find.text('先自评状态'), findsOneWidget);
+    expect(find.text('开始训练'), findsNothing);
+    expect(find.text('自我评估状态'), findsOneWidget);
 
-    // 底栏三主 tab：切到记忆库
-    await tester.tap(find.text('记忆库'));
+    // 底部两 tab：切到社区
+    await tester.tap(find.text('社区'));
     await tester.pumpAndSettle();
-    expect(find.text('卡片库还空着'), findsOneWidget);
-
-    // 切到学习
-    await tester.tap(find.text('学习'));
-    await tester.pumpAndSettle();
-    expect(find.text('日语'), findsWidgets); // 学习页语言包列表
-
-    // 顶栏分类按钮 → 弹分组选择 → 进入分组内容
-    await tester.tap(find.byIcon(Icons.folder_outlined));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('工作'));
-    await tester.pumpAndSettle();
-    expect(find.text('「工作」还空着'), findsOneWidget);
+    expect(find.text('古诗词'), findsOneWidget); // 社区训练集目录
+    expect(find.text('趣味常识'), findsOneWidget);
   });
 
-  testWidgets('空库时复习页显示引导，且不显示开始按钮', (tester) async {
-    final container = await buildTestContainer();
-    addTearDown(container.dispose);
-
-    await tester.pumpWidget(
-      UncontrolledProviderScope(
-        container: container,
-        child: const MemcoachApp(),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.widgetWithText(FilledButton, '开始复习'), findsNothing);
-    expect(find.text('今天还没有复习任务'), findsOneWidget);
-  });
-
-  testWidgets('宽屏显示 Cubox 式侧栏布局', (tester) async {
+  testWidgets('宽屏显示侧栏布局（训练/社区）', (tester) async {
     final container = await buildTestContainer();
     addTearDown(container.dispose);
 
@@ -93,20 +95,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // iOS 侧栏元素：大标题 / 导航 / 分组
+    // 侧栏元素：大标题 / 导航
     expect(find.text('Memcoach'), findsOneWidget);
-    expect(find.text('今日复习'), findsOneWidget);
-    expect(find.text('分组'), findsOneWidget);
+    expect(find.text('训练'), findsWidgets);
+    expect(find.text('社区'), findsWidgets);
 
     // 窄屏底栏不再渲染
     expect(find.byType(NavigationBar), findsNothing);
-    // 仍显示复习页默认落点内容
-    expect(find.text('今天还没有复习任务'), findsOneWidget);
-
-    // 侧栏分组 → 分组内容（宽屏）
-    await tester.tap(find.text('工作'));
-    await tester.pumpAndSettle();
-    expect(find.text('「工作」还空着'), findsOneWidget);
   });
 
   testWidgets('设置页可切换深色/浅色/跟随系统主题', (tester) async {
@@ -129,8 +124,6 @@ void main() {
     // 默认跟随系统
     expect(container.read(themeModeProvider), ThemeMode.system);
 
-    // 进入设置（侧栏底部设置入口 → 这里通过 Provider 容器直接推到设置页较复杂，
-    // 改为验证设置页组件可独立渲染并切换）
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,

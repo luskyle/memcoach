@@ -1,8 +1,8 @@
 /**
- * WebDAV 读写（快照契约：shiyi/backup.json）。
- * 与拾忆 App 的云盘同步共用同一份 JSON——插件收藏即被各端合并入库。
+ * WebDAV 读写（快照契约：memcoach/backup.json）。
+ * 与记忆教练 App 的云盘同步共用同一份 JSON——插件收藏即被各端合并入库。
  */
-const REMOTE_PATH = '/shiyi/backup.json';
+const REMOTE_PATH = '/memcoach/backup.json';
 
 async function loadConfig() {
   const cfg = await chrome.storage.local.get(['davUrl', 'davUser', 'davPass']);
@@ -28,7 +28,7 @@ async function davGet(cfg) {
 async function davPut(cfg, payload) {
   // 确保父目录存在（MKCOL，已存在时忽略错误）
   try {
-    await fetch(cfg.url + '/shiyi', { method: 'MKCOL' });
+    await fetch(cfg.url + '/memcoach', { method: 'MKCOL' });
   } catch (_) {}
   const res = await fetch(cfg.url + REMOTE_PATH, {
     method: 'PUT',
@@ -36,11 +36,11 @@ async function davPut(cfg, payload) {
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error(`写入云端失败（HTTP ${res.status}）`);
-  // 通知本机拾忆桌面端立即同步（实时效果；未运行桌面端时静默）
+  // 通知本机记忆教练桌面端立即同步（实时效果；未运行桌面端时静默）
   pingDesktop();
 }
 
-/** 通知桌面端拾忆有新版数据（本地 9797 端口，秒级同步用）。 */
+/** 通知桌面端记忆教练有新版数据（本地 9797 端口，秒级同步用）。 */
 function pingDesktop() {
   try {
     fetch('http://127.0.0.1:9797/ping', { mode: 'no-cors' }).catch(() => {});

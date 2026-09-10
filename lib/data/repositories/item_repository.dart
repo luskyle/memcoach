@@ -4,9 +4,6 @@ import '../database/database.dart';
 import '../dictionary/dictionary_service.dart';
 import '../../domain/srs/sm2.dart';
 
-/// 默认「未分类」分组名（列表排序时恒置底）。
-const kUncategorizedName = '未分类';
-
 /// 收藏条目 + 关联卡片（join 视图）。
 class ItemWithCard {
   const ItemWithCard({required this.item, this.card});
@@ -194,7 +191,6 @@ class ItemRepository {
     List<String> tags = const [],
     String? note,
     String source = 'manual',
-    int? collectionId,
     int? wordId,
     DateTime? now,
   }) async {
@@ -241,59 +237,7 @@ class ItemRepository {
         );
 
     await _linkTags(itemId, tags);
-    if (collectionId != null) {
-      await _linkCollection(itemId, collectionId);
-    }
     return itemId;
-  }
-
-  List<ItemWithCard> _mapItemWithCard(List<TypedResult> rows) {
-    return rows
-        .map((r) => ItemWithCard(
-              item: r.readTable(db.items),
-              card: r.readTableOrNull(db.cards),
-            ))
-        .toList();
-  }
-
-  /// 记忆库流：全部成卡条目 + 可选搜索/筛选/按主库过滤。
-  Stream<List<ItemWithCard>> watchLibrary({
-    String search = '',
-    String? lang,
-    String? status,
-    int? collectionId,
-  }) {
-    final q = db.select(db.items).join([
-      leftOuterJoin(db.cards, db.cards.id.equalsExp(db.items.cardId)),
-      if (collectionId != null)
-        innerJoin(
-          db.itemCollections,
-          db.itemCollections.itemId.equalsExp(db.items.id),
-        ),
-    ])
-      ..where(db.items.cardId.isNotNull())
-      ..orderBy([OrderingTerm.desc(db.items.createdAt)]);
-
-    final where = q.where;
-    if (search.trim().isNotEmpty) {
-      final like = '%${search.trim()}%';
-      where(db.cards.prompt.like(like) |
-          db.cards.answer.like(like) |
-          db.cards.tags.like(like) |
-          db.items.note.like(like));
-    }
-    if (lang != null && lang.isNotEmpty) {
-      where(db.cards.lang.equals(lang));
-    }
-    if (status != null && status.isNotEmpty) {
-      where(db.items.status.equals(status));
-    }
-    if (collectionId != null) {
-      where(db.itemCollections.collectionId.equals(collectionId) &
-          db.itemCollections.isPrimary.equals(true));
-    }
-
-    return q.watch().map(_mapItemWithCard);
   }
 
   /// 删除条目与对应卡片（复习日志级联删除）。
@@ -335,80 +279,5 @@ class ItemRepository {
             mode: InsertMode.insertOrIgnore,
           );
     }
-  }
-
-  // ---- 分组（库）----
-
-  /// 分类列表（「未分类」恒置底，其余按 id 即创建顺序）。
-  Future<List<CollectionRow>> collections() async {
-    final all = await db.select(db.collections).get();
-    final uncategorized =
-        all.where((c) => c.name == kUncategorizedName).toList();
-    final rest = all.where((c) => c.name != kUncategorizedName).toList();
-    return [...rest, ...uncategorized];
-  }
-
-  Future<int> createCollection(String name, {bool isSystem = false}) {
-    return db.into(db.collections).insert(
-          CollectionsCompanion.insert(
-            name: name,
-            isSystem: Value(isSystem),
-            createdAt: DateTime.now(),
-          ),
-        );
-  }
-
-  Future<void> renameCollection(int id, String name) =>
-      (db.update(db.collections)..where((t) => t.id.equals(id)))
-          .write(CollectionsCompanion(name: Value(name)));
-
-  Future<void> deleteCollection(int id) async {
-    await (db.delete(db.itemCollections)
-          ..where((t) => t.collectionId.equals(id)))
-        .go();
-    await (db.delete(db.collections)..where((t) => t.id.equals(id))).go();
-  }
-
-  Future<void> _linkCollection(int itemId, int collectionId) {
-    return db.into(db.itemCollections).insert(
-          ItemCollectionsCompanion.insert(
-            itemId: itemId,
-            collectionId: collectionId,
-            isPrimary: const Value(true),
-          ),
-          mode: InsertMode.insertOrIgnore,
-        );
-  }
-
-  /// 条目所属的库（详情页展示用）。
-  Future<List<CollectionRow>> collectionsOfItem(int itemId) async {
-    final rows = await (db.select(db.itemCollections).join([
-      innerJoin(db.collections,
-          db.collections.id.equalsExp(db.itemCollections.collectionId)),
-    ])
-          ..where(db.itemCollections.itemId.equals(itemId)))
-        .get();
-    return rows.map((r) => r.readTable(db.collections)).toList();
-  }
-
-  /// 库统计：卡片数 + 已掌握数（记忆库分组头部数据条）。
-  Future<Map<int, ({int total, int mastered})>> collectionStats() async {
-    final items =
-        await (db.select(db.items)..where((t) => t.cardId.isNotNull())).get();
-    final links = await db.select(db.itemCollections).get();
-
-    final stats = <int, ({int total, int mastered})>{};
-    final itemsById = {for (final i in items) i.id: i};
-    for (final link in links) {
-      final item = itemsById[link.itemId];
-      if (item == null) continue;
-      final entry =
-          stats.putIfAbsent(link.collectionId, () => (total: 0, mastered: 0));
-      stats[link.collectionId] = (
-        total: entry.total + 1,
-        mastered: entry.mastered + (item.status == 'mastered' ? 1 : 0),
-      );
-    }
-    return stats;
   }
 }

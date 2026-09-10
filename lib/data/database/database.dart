@@ -6,7 +6,7 @@ import 'tables.dart';
 
 part 'database.g.dart';
 
-const kSchemaVersion = 6;
+const kSchemaVersion = 7;
 
 /// Memcoach 主库（drift/SQLite）。
 ///
@@ -18,11 +18,8 @@ const kSchemaVersion = 6;
     Cards,
     Items,
     ReviewLogs,
-    Collections,
-    ItemCollections,
     ItemTags,
-    MemorySets,
-    MemorySetItems,
+    TrainingSets,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -42,10 +39,20 @@ class AppDatabase extends _$AppDatabase {
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (m) async {
           await m.createAll();
-          await _seedSystemCollections();
         },
         onUpgrade: (m, from, to) async {
-          // v6（记忆教练）：移除素材库与云同步（独立不互通）
+          // v7（社区版）：移除「分组」与「记忆管理」，引入「训练集」。
+          if (from < 7) {
+            await customStatement(
+                'DROP TABLE IF EXISTS memory_set_items');
+            await customStatement('DROP TABLE IF EXISTS memory_sets');
+            await customStatement(
+                'DROP TABLE IF EXISTS item_collections');
+            await customStatement('DROP TABLE IF EXISTS collections');
+            await m.createTable(trainingSets);
+            await m.addColumn(cards, cards.trainingSetId);
+            await m.addColumn(cards, cards.trainingItemIndex);
+          }
           if (from < 6) {
             await customStatement('DROP TABLE IF EXISTS sync_deletions');
             await customStatement('DROP TABLE IF EXISTS media_assets');
@@ -56,15 +63,8 @@ class AppDatabase extends _$AppDatabase {
                   'ALTER TABLE items DROP COLUMN media_asset_id');
             } catch (_) {}
           }
-          if (from < 5) {
-            await m.createTable(memorySets);
-            await m.createTable(memorySetItems);
-          }
           if (from < 3) {
             await m.addColumn(items, items.sourceTitle);
-          }
-          if (from < 2) {
-            // v2 引入的同步墓碑表已随 v6 移除，这里不再创建
           }
           // 破坏性迁移保留：数据模型锁定后再补备份导出
           if (from < 1) {
@@ -72,36 +72,4 @@ class AppDatabase extends _$AppDatabase {
           }
         },
       );
-
-  Future<void> _seedSystemCollections() async {
-    await ensureDefaultCollections();
-  }
-
-  /// 确保默认分类（工作/学习/未分类）存在且为系统分类（不可删除）。
-  /// 幂等：旧库/新库均可安全调用（启动 bootstrap 也会执行）。
-  Future<void> ensureDefaultCollections() async {
-    const defaults = {'工作', '学习', '未分类'};
-    final existing = await (select(collections)
-          ..where((t) => t.isSystem.equals(true)))
-        .get();
-    final names = existing.map((c) => c.name).toSet();
-
-    for (final name in defaults) {
-      if (names.contains(name)) continue;
-      await into(collections).insert(
-        CollectionsCompanion.insert(
-          name: name,
-          isSystem: const Value(true),
-          createdAt: DateTime.now(),
-        ),
-      );
-    }
-    // 旧库历史系统分类（非默认）降级为普通分类，允许用户删除
-    for (final c in existing) {
-      if (!defaults.contains(c.name)) {
-        await (update(collections)..where((t) => t.id.equals(c.id)))
-            .write(const CollectionsCompanion(isSystem: Value(false)));
-      }
-    }
-  }
 }

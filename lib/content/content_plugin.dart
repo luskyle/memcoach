@@ -78,3 +78,30 @@ class ContentPlugin {
   final List<ContentItem> items;
   final String locale;
 }
+
+/// 玩法 → 中文文案（社区目录「训练类型」标签）。
+String contentKindLabel(ContentKind kind) {
+  return switch (kind) {
+    ContentKind.flashcard => '翻卡',
+    ContentKind.quiz => '单选',
+    ContentKind.cloze => '填空',
+  };
+}
+
+/// 训练集卡片内容扩展：把任意玩法条目拍平成「正面/背面」闪卡，
+/// 使其能进入统一的 SM-2 训练循环。
+extension TrainingCardX on ContentItem {
+  /// 返回 (正面, 背面)。
+  (String, String) toTrainingCard() {
+    return switch (this) {
+      FlashcardItem f => (f.front, f.back),
+      QuizItem q => (
+          q.prompt,
+          q.options[q.answerIndex] +
+              (q.explanation == null ? '' : '\n（解析：${q.explanation}）'),
+        ),
+      ClozeItem c => (c.title, c.lines.join('，')),
+    };
+  }
+}
+
