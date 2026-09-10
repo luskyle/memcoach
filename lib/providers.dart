@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -8,13 +6,10 @@ import 'data/analytics/analytics_service.dart';
 import 'data/database/database.dart';
 import 'data/dictionary/dictionary_service.dart';
 import 'data/repositories/item_repository.dart';
-import 'data/repositories/media_repository.dart';
 import 'data/repositories/memory_set_repository.dart';
 import 'data/repositories/review_repository.dart';
 import 'data/settings/settings_store.dart';
 import 'data/speech/speech_service.dart';
-import 'data/sync/cloud_drive.dart';
-import 'data/sync/sync_service.dart';
 import 'domain/srs/sm2.dart';
 import 'domain/tagging/language.dart';
 
@@ -43,25 +38,6 @@ final settingsProvider = Provider<SettingsStore>((ref) {
       'initialized in main() via settingsStoreProvider');
 });
 
-/// 云盘同步服务（通道按设置路由：iCloud Drive 优先；WebDAV 兜底）。
-final syncServiceProvider = Provider<SyncService>((ref) {
-  final db = ref.watch(databaseProvider);
-  final settings = ref.watch(settingsProvider);
-  if (settings.syncChannel == 'webdav' &&
-      settings.webdavUrl != null &&
-      settings.webdavUrl!.trim().isNotEmpty) {
-    return SyncService(
-      db: db,
-      cloud: WebDavAdapter(
-        baseUrl: settings.webdavUrl!.trim(),
-        username: settings.webdavUser ?? '',
-        password: settings.webdavPassword ?? '',
-      ),
-    );
-  }
-  return SyncService(db: db, cloud: const ICloudDriveAdapter());
-});
-
 /// 由 main() 注入的 SharedPreferences 实例。
 final sharedPrefsProvider = Provider<SharedPreferences>((ref) {
   throw UnimplementedError('sharedPrefsProvider must be overridden in main()');
@@ -69,21 +45,6 @@ final sharedPrefsProvider = Provider<SharedPreferences>((ref) {
 
 final itemRepositoryProvider = Provider<ItemRepository>((ref) {
   return ItemRepository(ref.watch(databaseProvider));
-});
-
-/// 本地素材库（链接不导入；仅本地使用）。
-final mediaRepositoryProvider = Provider<MediaRepository>((ref) {
-  return MediaRepository(ref.watch(databaseProvider));
-});
-
-/// 素材列表（新在前）。
-final mediaAssetsProvider = FutureProvider<List<MediaAssetRow>>((ref) {
-  return ref.watch(mediaRepositoryProvider).all();
-});
-
-/// 素材目录列表（新在前）。
-final mediaFoldersProvider = FutureProvider<List<MediaFolderRow>>((ref) {
-  return ref.watch(mediaRepositoryProvider).folders();
 });
 
 /// 记忆集仓储（记忆教练：自建复习集合）。
@@ -330,20 +291,8 @@ final quotaProvider = FutureProvider<QuotaState>((ref) async {
 });
 
 // ---------------------------------------------------------------------------
-// 剪贴板监听
+// 主题
 // ---------------------------------------------------------------------------
-
-/// 剪贴板指纹（去重提示用，源码不含可供理解的内容）。
-String clipboardFingerprint(String text) {
-  final t = text.trim();
-  if (t.length > 200) return t.substring(0, 200);
-  return t;
-}
-
-/// 剪贴板监听开关（UI 状态，初始化自设置；切换即时启停监听）。
-final clipboardWatchEnabledProvider = StateProvider<bool>((ref) {
-  return ref.watch(settingsProvider).clipboardWatchEnabled;
-});
 
 /// 主题模式（UI 状态：system / light / dark；随设置持久化）。
 final themeModeProvider = StateProvider<ThemeMode>((ref) {
@@ -354,51 +303,6 @@ final themeModeProvider = StateProvider<ThemeMode>((ref) {
     _ => ThemeMode.system,
   };
 });
-
-/// 剪贴板轮询器：App 前台时每 4s 检查一次（可关闭）。
-/// 有新的可收藏文本 → 通过 [onCapture] 回调通知 UI 弹轻提示。
-class ClipboardWatcher {
-  ClipboardWatcher({
-    required this.readClipboard,
-    required this.onCapture,
-  });
-
-  /// 读取剪贴板文本（注入以便测试）。
-  final Future<String?> Function() readClipboard;
-  final void Function(String text) onCapture;
-
-  Timer? _timer;
-  String? _lastHandled;
-  bool _enabled = false;
-
-  void start() {
-    if (_enabled) return;
-    _enabled = true;
-    _timer = Timer.periodic(const Duration(seconds: 4), (_) => _poll());
-  }
-
-  void stop() {
-    _enabled = false;
-    _timer?.cancel();
-    _timer = null;
-  }
-
-  Future<void> _poll() async {
-    final text = await readClipboard();
-    if (text == null || text.trim().isEmpty) return;
-    final fp = clipboardFingerprint(text);
-    if (fp == _lastHandled) return;
-    if (fp.length < 2 || fp.length > 2000) return;
-    _lastHandled = fp;
-    onCapture(text.trim());
-  }
-
-  void markHandled(String text) {
-    _lastHandled = clipboardFingerprint(text);
-  }
-
-  void dispose() => stop();
-}
 
 // ---------------------------------------------------------------------------
 // 语言标签帮助函数

@@ -31,7 +31,7 @@ Future<void> main() async {
         settingsProvider.overrideWithValue(SettingsStore(prefs)),
         if (analytics != null) analyticsProvider.overrideWithValue(analytics),
       ],
-      child: const ShiyiApp(),
+      child: const MemcoachApp(),
     ),
   );
 }

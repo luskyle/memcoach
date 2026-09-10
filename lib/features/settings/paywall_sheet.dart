@@ -36,7 +36,7 @@ class PaywallSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('拾忆 Pro', style: Theme.of(context).textTheme.headlineSmall),
+          Text('Memcoach Pro', style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 4),
           Text(
             reason,

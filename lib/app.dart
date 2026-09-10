@@ -6,14 +6,14 @@ import 'core/theme.dart';
 import 'features/home/home_shell.dart';
 import 'providers.dart';
 
-/// 拾忆 App 根组件。
-class ShiyiApp extends ConsumerWidget {
-  const ShiyiApp({super.key});
+/// Memcoach 记忆教练 App 根组件。
+class MemcoachApp extends ConsumerWidget {
+  const MemcoachApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
-      title: '拾忆',
+      title: 'Memcoach',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),

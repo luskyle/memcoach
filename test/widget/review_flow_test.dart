@@ -18,9 +18,7 @@ void main() {
   late ReviewRepository reviewRepo;
 
   setUp(() async {
-    SharedPreferences.setMockInitialValues({
-      'settings.clipboard_watch': false,
-    });
+    SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();
     db = AppDatabase.forTesting();
     container = ProviderContainer(

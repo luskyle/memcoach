@@ -3,7 +3,6 @@ import 'package:drift/drift.dart';
 import '../database/database.dart';
 import '../dictionary/dictionary_service.dart';
 import '../../domain/srs/sm2.dart';
-import '../../domain/tagging/language.dart';
 
 /// 默认「未分类」分组名（列表排序时恒置底）。
 const kUncategorizedName = '未分类';
@@ -197,7 +196,6 @@ class ItemRepository {
     String source = 'manual',
     int? collectionId,
     int? wordId,
-    int? mediaAssetId,
     DateTime? now,
   }) async {
     final ts = now ?? DateTime.now();
@@ -238,7 +236,6 @@ class ItemRepository {
             note: Value(note),
             lang: Value(lang),
             status: const Value('learning'),
-            mediaAssetId: Value(mediaAssetId),
             createdAt: ts,
           ),
         );
@@ -248,101 +245,6 @@ class ItemRepository {
       await _linkCollection(itemId, collectionId);
     }
     return itemId;
-  }
-
-  /// 收藏入口（剪贴板/分享等）：仅建条目，未成卡（status=inbox，待整理）。
-  Future<int> createInboxItem({
-    required String text,
-    String source = 'clipboard',
-    String? note,
-    DateTime? now,
-  }) async {
-    final ts = now ?? DateTime.now();
-    final lang = langCodeOf(detectLang(text));
-    return db.into(db.items).insert(
-          ItemsCompanion.insert(
-            source: Value(source),
-            note: Value(note ?? text),
-            lang: Value(lang),
-            status: const Value('inbox'),
-            createdAt: ts,
-          ),
-        );
-  }
-
-  /// 收件箱条目 → 成卡（一键整理）。低置信（未命中词库/AI）标"待确认"标签。
-  Future<int> confirmInboxToCard({
-    required int itemId,
-    required String answer,
-    String? promptOverride,
-    String? kind,
-    List<String> tags = const [],
-    int? collectionId,
-    DateTime? now,
-  }) async {
-    final ts = now ?? DateTime.now();
-    final item = await (db.select(db.items)..where((t) => t.id.equals(itemId)))
-        .getSingleOrNull();
-    if (item == null) throw StateError('item not found: $itemId');
-
-    final prompt = promptOverride ?? item.note ?? item.id.toString();
-    final cardKind = kind ?? 'word';
-
-    int? wordId;
-    final dictionaryHit = _dictionary.lookup(prompt).isNotEmpty;
-    if (cardKind == 'word' && dictionaryHit) {
-      final hit = _dictionary.lookup(prompt).first;
-      wordId = await db.into(db.words).insert(
-            WordsCompanion.insert(
-              lang: hit.lang,
-              headword: hit.headword,
-              reading: Value(hit.reading),
-              level: Value(hit.level),
-            ),
-          );
-    }
-
-    final cardId = await db.into(db.cards).insert(
-          CardsCompanion.insert(
-            kind: Value(cardKind),
-            prompt: prompt,
-            answer: answer,
-            wordId: Value(wordId),
-            lang: Value(item.lang),
-            tags: Value(tags.join(',')),
-            dueAt: firstReviewDueAt(ts),
-            createdAt: ts,
-          ),
-        );
-
-    final resolvedTags = [
-      ...tags,
-      if (cardKind == 'word' && !dictionaryHit) '待确认',
-    ];
-
-    await (db.update(db.items)..where((t) => t.id.equals(itemId))).write(
-      ItemsCompanion(
-        cardId: Value(cardId),
-        status: const Value('learning'),
-        note: const Value(null),
-      ),
-    );
-    await _linkTags(itemId, resolvedTags);
-    if (collectionId != null) {
-      await _linkCollection(itemId, collectionId);
-    }
-    return cardId;
-  }
-
-  /// 收件箱流：待归类(inbox) + 待学习(learning)，收藏时间倒序。
-  Stream<List<ItemWithCard>> watchInbox() {
-    final q = db.select(db.items).join([
-      leftOuterJoin(db.cards, db.cards.id.equalsExp(db.items.cardId)),
-    ])
-      ..where(db.items.status.isIn(['inbox', 'learning']))
-      ..orderBy([OrderingTerm.desc(db.items.createdAt)])
-      ..limit(500);
-    return q.watch().map(_mapItemWithCard);
   }
 
   List<ItemWithCard> _mapItemWithCard(List<TypedResult> rows) {
@@ -394,37 +296,15 @@ class ItemRepository {
     return q.watch().map(_mapItemWithCard);
   }
 
-  /// 删除条目与对应卡片（复习日志级联删除；打墓碑防同步复活）。
+  /// 删除条目与对应卡片（复习日志级联删除）。
   Future<void> deleteItem(int itemId) async {
     final item = await (db.select(db.items)..where((t) => t.id.equals(itemId)))
         .getSingleOrNull();
-    await recordDeletion('items', itemId);
-    if (item?.cardId != null) {
-      await recordDeletion('cards', item!.cardId!);
-    }
     await (db.delete(db.items)..where((t) => t.id.equals(itemId))).go();
     if (item?.cardId != null) {
       await (db.delete(db.cards)..where((t) => t.id.equals(item!.cardId!)))
           .go();
     }
-  }
-
-  /// 记录删除墓碑（防止同步 pull 时复活）。
-  Future<void> recordDeletion(String tableName, int entityId) {
-    return db.into(db.syncDeletions).insert(
-          SyncDeletionsCompanion.insert(
-            entityTable: tableName,
-            entityId: entityId,
-            deletedAt: DateTime.now(),
-          ),
-          mode: InsertMode.insertOrIgnore,
-        );
-  }
-
-  /// 全部墓碑键（merge 过滤用）：`table|id` 集合。
-  Future<Set<String>> deletionKeys() async {
-    final rows = await db.select(db.syncDeletions).get();
-    return rows.map((r) => '${r.entityTable}|${r.entityId}').toSet();
   }
 
   /// 编辑卡面字段。
@@ -483,7 +363,6 @@ class ItemRepository {
           .write(CollectionsCompanion(name: Value(name)));
 
   Future<void> deleteCollection(int id) async {
-    await recordDeletion('collections', id);
     await (db.delete(db.itemCollections)
           ..where((t) => t.collectionId.equals(id)))
         .go();

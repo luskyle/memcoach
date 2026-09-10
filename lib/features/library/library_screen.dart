@@ -7,8 +7,7 @@ import '../../providers.dart';
 import '../../shared/empty_state.dart';
 import '../../shared/ios_large_title.dart';
 import '../../shared/status_chip.dart';
-import '../inbox/item_actions.dart';
-import 'media_library_screen.dart';
+import 'card_edit_sheet.dart';
 
 /// 分组内容：展示某个分组的全部成卡。
 /// 搜索（全文）/ 筛选（语言、状态）/ 分组（库 + 未分类兜底）。
@@ -50,7 +49,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             ?.where((c) => c.id == filter.collectionId)
             .map((c) => c.name)
             .firstOrNull;
-    final title = selectedName ?? '收藏';
+    final title = selectedName ?? '卡片库';
 
     return Column(
       children: [
@@ -169,8 +168,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               if (list.isEmpty) {
                 return EmptyState(
                   icon: Icons.collections_bookmark_outlined,
-                  title: selectedName == null ? '还没有收藏' : '「$title」还空着',
-                  subtitle: '侧栏分组 + 或右上角 ⊕ 收藏，内容会出现在对应分组。',
+                  title: selectedName == null ? '卡片库还空着' : '「$title」还空着',
+                  subtitle: '去「学习」学会新词，或从侧栏选择一个分组查看内容。',
                 );
               }
               // 分组内容直接平铺展示（不再依赖展开），按视图模式渲染
@@ -496,7 +495,7 @@ class _ItemListTile extends ConsumerWidget {
           overflow: TextOverflow.ellipsis,
         ),
         trailing: StatusChip(status: item.item.status),
-        onTap: () => ItemActions.open(context, ref, item),
+        onTap: () => CardEditSheet.open(context, ref, item),
       ),
     );
   }
@@ -528,7 +527,7 @@ class _ItemGridCard extends ConsumerWidget {
       color: scheme.surfaceContainerLow,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       child: InkWell(
-        onTap: () => ItemActions.open(context, ref, item),
+        onTap: () => CardEditSheet.open(context, ref, item),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
           child: Column(
@@ -552,15 +551,6 @@ class _ItemGridCard extends ConsumerWidget {
                   StatusChip(status: item.item.status),
                 ],
               ),
-              // 素材预览（记忆教练：链接本地素材，回忆锚点）
-              if (item.item.mediaAssetId != null) ...[
-                const SizedBox(height: 10),
-                SizedBox(
-                  height: 96,
-                  width: double.infinity,
-                  child: SourceMediaView(assetId: item.item.mediaAssetId!),
-                ),
-              ],
               const SizedBox(height: 12),
               // 正面（大字，方形卡片空间紧凑限 2 行）
               Text(

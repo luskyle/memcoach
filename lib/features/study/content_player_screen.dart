@@ -35,6 +35,17 @@ class _ContentPlayerScreenState extends ConsumerState<ContentPlayerScreen> {
   List<ContentItem> get _items => _plugin.items;
 
   @override
+  void initState() {
+    super.initState();
+    // 首个内容若是填空，进入后立即生成空位（否则首屏无空可填）
+    if (widget.plugin.kind == ContentKind.cloze) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(_initCloze);
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _disposeBlankCtrl();
     super.dispose();
@@ -77,19 +88,19 @@ class _ContentPlayerScreenState extends ConsumerState<ContentPlayerScreen> {
 
   // ---- 填空 ----
 
+  /// 同步生成当前项的挖空空位（调用方负责 setState 触发重建）。
   void _initCloze() {
     _disposeBlankCtrl();
     final item = _items[_index] as ClozeItem;
     final blanks = createBlanks(item.lines, count: 5, random: Random());
-    _blankCtrls.clear();
-    for (var i = 0; i < blanks.length; i++) {
-      _blankCtrls.add(TextEditingController());
-    }
-    setState(() {
-      _clozeBlanks = blanks;
-      _clozeChecked = false;
-      _clozeCorrect = 0;
-    });
+    _blankCtrls
+      ..clear()
+      ..addAll(
+        [for (var i = 0; i < blanks.length; i++) TextEditingController()],
+      );
+    _clozeBlanks = blanks;
+    _clozeChecked = false;
+    _clozeCorrect = 0;
   }
 
   void _checkCloze() {
@@ -109,10 +120,7 @@ class _ContentPlayerScreenState extends ConsumerState<ContentPlayerScreen> {
   }
 
   void _clozeToScore() {
-    setState(() {
-      _disposeBlankCtrl();
-      _advance();
-    });
+    setState(_advance); // 下一项若是填空，_advance 内同步初始化
   }
 
   void _advance() {
@@ -121,10 +129,8 @@ class _ContentPlayerScreenState extends ConsumerState<ContentPlayerScreen> {
       _done = true;
     } else {
       _index += 1;
-      final item = _items[_index];
-      if (item is ClozeItem) {
-        // 在下一帧初始化填空（controller 需在 build 时已准备）
-        WidgetsBinding.instance.addPostFrameCallback((_) => _initCloze());
+      if (_items[_index] is ClozeItem) {
+        _initCloze(); // 同步生成空位，build 时即可渲染
       }
     }
   }
@@ -136,12 +142,11 @@ class _ContentPlayerScreenState extends ConsumerState<ContentPlayerScreen> {
       _done = false;
       _selected = null;
       _flipped = false;
-      _disposeBlankCtrl();
       _clozeChecked = false;
+      if (_items.first is ClozeItem) {
+        _initCloze();
+      }
     });
-    if (_items.first is ClozeItem) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _initCloze());
-    }
   }
 
   @override
@@ -362,59 +367,67 @@ class _ContentPlayerScreenState extends ConsumerState<ContentPlayerScreen> {
     final indexByBlank = {
       for (var i = 0; i < _clozeBlanks.length; i++) _clozeBlanks[i]: i,
     };
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          item.title,
-          style: const TextStyle(
-              fontSize: 22, fontWeight: FontWeight.w700),
-        ),
-        if (item.subtitle != null) ...[
-          const SizedBox(height: 2),
-          Text(
-            '【${item.subtitle}】',
-            style: TextStyle(
-                fontSize: 12, color: scheme.onSurfaceVariant),
-          ),
-        ],
-        const SizedBox(height: 20),
-        for (var li = 0; li < item.lines.length; li++)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: _ClozeLine(
-              text: item.lines[li],
-              blanks:
-                  _clozeBlanks.where((b) => b.lineIndex == li).toList(),
-              checked: _clozeChecked,
-              ctrls: _blankCtrls,
-              indexByBlank: indexByBlank,
-              lines: item.lines,
+    return Card(
+      elevation: 0,
+      color: scheme.surfaceContainerLow,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(28, 24, 28, 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              item.title,
+              style: const TextStyle(
+                  fontSize: 22, fontWeight: FontWeight.w700),
             ),
-          ),
-        const SizedBox(height: 8),
-        Text(
-          _clozeChecked
-              ? '本首答对 $_clozeCorrect/${_clozeBlanks.length}'
-              : '在划线处补全（${_clozeBlanks.length} 处）',
-          style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          child: _clozeChecked
-              ? FilledButton.icon(
-                  onPressed: _clozeToScore,
-                  icon: const Icon(Icons.skip_next, size: 20),
-                  label: const Text('下一首'),
-                )
-              : FilledButton.icon(
-                  onPressed: _checkCloze,
-                  icon: const Icon(Icons.check, size: 20),
-                  label: const Text('检查'),
+            if (item.subtitle != null) ...[
+              const SizedBox(height: 2),
+              Text(
+                '【${item.subtitle}】',
+                style: TextStyle(
+                    fontSize: 12, color: scheme.onSurfaceVariant),
+              ),
+            ],
+            const SizedBox(height: 20),
+            for (var li = 0; li < item.lines.length; li++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _ClozeLine(
+                  text: item.lines[li],
+                  blanks:
+                      _clozeBlanks.where((b) => b.lineIndex == li).toList(),
+                  checked: _clozeChecked,
+                  ctrls: _blankCtrls,
+                  indexByBlank: indexByBlank,
+                  lines: item.lines,
                 ),
+              ),
+            const SizedBox(height: 8),
+            Text(
+              _clozeChecked
+                  ? '本首答对 $_clozeCorrect/${_clozeBlanks.length}'
+                  : '在划线处补全（${_clozeBlanks.length} 处）',
+              style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: _clozeChecked
+                  ? FilledButton.icon(
+                      onPressed: _clozeToScore,
+                      icon: const Icon(Icons.skip_next, size: 20),
+                      label: const Text('下一首'),
+                    )
+                  : FilledButton.icon(
+                      onPressed: _checkCloze,
+                      icon: const Icon(Icons.check, size: 20),
+                      label: const Text('检查'),
+                    ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 

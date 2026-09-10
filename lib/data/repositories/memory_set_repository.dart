@@ -1,9 +1,7 @@
 import 'package:drift/drift.dart' as drift;
-import 'package:path/path.dart' as p;
 
 import '../database/database.dart';
 import 'item_repository.dart';
-import '../../domain/tagging/language.dart';
 
 /// 记忆集数据（含条目展开视图）。
 class MemorySetWithItems {
@@ -15,7 +13,6 @@ class MemorySetWithItems {
 
 /// 记忆集仓储（记忆教练：用户自建复习集合）：
 /// 记忆集 = 一组收藏条目（卡片），可整体学习/复习/回顾。
-/// 从素材库拉入素材时：自动建卡（prompt=文件名，answer=素材用途/占位）。
 class MemorySetRepository {
   MemorySetRepository(this.db, {required this.items});
 
@@ -98,33 +95,6 @@ class MemorySetRepository {
           ),
           mode: drift.InsertMode.insertOrIgnore,
         );
-  }
-
-  /// 批量拉入素材 → 自动成卡（prompt=文件名，answer=用途/占位）。
-  /// 返回新建的 itemId 列表。
-  Future<List<int>> addMediaAssets(int setId, List<MediaAssetRow> assets,
-      {DateTime? now}) async {
-    final result = <int>[];
-    for (final a in assets) {
-      final prompt = p.basenameWithoutExtension(a.path);
-      final answer = (a.purpose?.isNotEmpty ?? false)
-          ? a.purpose!
-          : (a.type == 'video' ? '视频素材（点击播放回顾）' : '图片素材');
-      final lang = langCodeOf(detectLang(prompt));
-      final itemId = await items.createManualCard(
-        prompt: prompt,
-        answer: '（记忆集：$prompt）\n$answer',
-        kind: 'word',
-        lang: lang,
-        note: a.path,
-        source: 'memory_set',
-        mediaAssetId: a.id,
-        now: now,
-      );
-      await addItem(setId, itemId);
-      result.add(itemId);
-    }
-    return result;
   }
 
   /// 从集合移除条目（不删除收藏）。

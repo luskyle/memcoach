@@ -1,5 +1,5 @@
 name: shiyi
-description: 拾忆 —— 把你想记住的任何东西收进来，它会在对的时间提醒你复习。
+description: Memcoach 记忆教练 —— 把你想记住的任何东西收进来，它会在对的时间提醒你复习。
 publish_to: "none"
 version: 0.1.0+1
 
@@ -23,17 +23,12 @@ dependencies:
   path: ^1.9.0
   path_provider: ^2.1.5
   intl: ^0.20.2
-  # 导出 zip（media + JSON）
+  # 导出 zip（元数据 + JSON）
   archive: ^4.0.0
-  # 云盘同步（B 档）：WebDAV 通道（iCloud 走原生通道）
-  webdav_client: ^1.1.0
   # 发音：系统 TTS（iOS AVSpeechSynthesizer / Android / 桌面视引擎）
   flutter_tts: ^4.2.0
   # 打开网页原文（收藏出处回看）
   url_launcher: ^6.3.0
-  # 本地素材库：目录/文件选择 + 视频播放（桌面端链接本地素材，不导入）
-  file_picker: ^8.1.2
-  video_player: ^2.9.1
 
 dev_dependencies:
   flutter_test:

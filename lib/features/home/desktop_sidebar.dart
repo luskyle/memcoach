@@ -1,11 +1,10 @@
-import 'package:flutter/cupertino.dart' show CupertinoButton;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme.dart';
 import '../../data/database/database.dart';
 import '../../providers.dart';
-import '../inbox/add_item_sheet.dart';
+import 'home_shell.dart' show kTabLibrary, kTabMemory, kTabReview, kTabStudy;
 
 /// iOS 风格侧边栏（HIG Sidebar）：大标题 + 分组导航 + 底部设置。
 ///
@@ -35,60 +34,39 @@ class DesktopSidebar extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // iOS Large Title + 新建按钮
+              // 大标题
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 20, 16, 6),
-                child: Row(
-                  children: [
-                    Text(
-                      '拾忆',
-                      style: Theme.of(context)
-                          .textTheme
-                          .displayMedium
-                          ?.copyWith(fontWeight: FontWeight.w700),
-                    ),
-                    const Spacer(),
-                    CupertinoButton(
-                      padding: EdgeInsets.zero,
-                      minimumSize: const Size(34, 34),
-                      onPressed: () => _openAddSheet(context),
-                      child: Icon(
-                        Icons.add_circle,
-                        size: 26,
-                        color: AppTheme.systemBlue,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  'Memcoach',
+                  style: Theme.of(context)
+                      .textTheme
+                      .displayMedium
+                      ?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
               const SizedBox(height: 10),
-              // ---- 收藏箱（第一分组）----
+              // ---- 主导航（第一分组）----
               _SidebarGroup(
                 children: [
                   _SidebarRow(
                     icon: Icons.school,
                     label: '今日复习',
                     badge: due,
-                    selected: activeTab == 0,
-                    onTap: () => onSelectTab(0),
+                    selected: activeTab == kTabReview,
+                    onTap: () => onSelectTab(kTabReview),
                   ),
                   _SidebarRow(
                     icon: Icons.translate,
                     label: '学习',
-                    selected: activeTab == 2,
-                    onTap: () => onSelectTab(2),
-                  ),
-                  _SidebarRow(
-                    icon: Icons.photo_library_outlined,
-                    label: '素材库',
-                    selected: activeTab == 3,
-                    onTap: () => onSelectTab(3),
+                    selected: activeTab == kTabStudy,
+                    onTap: () => onSelectTab(kTabStudy),
                   ),
                   _SidebarRow(
                     icon: Icons.workspaces_outline,
                     label: '记忆管理',
-                    selected: activeTab == 4,
-                    onTap: () => onSelectTab(4),
+                    selected: activeTab == kTabMemory,
+                    onTap: () => onSelectTab(kTabMemory),
                   ),
                 ],
               ),
@@ -141,7 +119,7 @@ class DesktopSidebar extends ConsumerWidget {
                             child: _SidebarRow(
                               icon: Icons.folder,
                               label: c.name,
-                              selected: activeTab == 1 &&
+                              selected: activeTab == kTabLibrary &&
                                   ref
                                           .watch(libraryFilterProvider)
                                           .collectionId ==
@@ -186,11 +164,8 @@ class DesktopSidebar extends ConsumerWidget {
       ),
     );
     if (name != null && name.isNotEmpty) {
-      final repo = ref.read(itemRepositoryProvider);
-      await repo.createCollection(name);
+      await ref.read(itemRepositoryProvider).createCollection(name);
       ref.invalidate(collectionsProvider);
-      // 分类即时同步到云端（浏览器端弹窗下拉实时可见）
-      ref.read(syncServiceProvider).syncNow().ignore();
     }
   }
 
@@ -227,23 +202,13 @@ class DesktopSidebar extends ConsumerWidget {
       await ref.read(itemRepositoryProvider).deleteCollection(c.id);
       ref.invalidate(collectionsProvider);
       ref.invalidate(collectionStatsProvider);
-      // 分类即时同步到云端
-      ref.read(syncServiceProvider).syncNow().ignore();
     }
   }
 
   void _openCollection(WidgetRef ref, CollectionRow c) {
     ref.read(libraryFilterProvider.notifier).state =
         ref.read(libraryFilterProvider).withCollection(c.id);
-    onSelectTab(1);
-  }
-
-  void _openAddSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => const AddItemSheet(),
-    );
+    onSelectTab(kTabLibrary);
   }
 }
 

@@ -9,26 +9,25 @@ void main() {
       final svc = AnalyticsService();
       svc.track(AnalyticsEvents.appOpen);
       svc.track(AnalyticsEvents.reviewRating, props: {'quality': 4});
-      svc.track(AnalyticsEvents.itemCollected, props: {'source': 'clipboard'});
+      svc.track(AnalyticsEvents.itemCollected, props: {'source': 'study'});
 
       expect(svc.events, hasLength(3));
       expect(svc.events[0]['event'], AnalyticsEvents.appOpen);
       expect(svc.events[0]['ts'], isNotNull);
       expect(svc.events[1]['quality'], 4);
-      expect(svc.events[2]['source'], 'clipboard');
+      expect(svc.events[2]['source'], 'study');
     });
 
     test('一次会话中包含留存漏斗关键事件', () {
       final svc = AnalyticsService();
       svc.track(AnalyticsEvents.appOpen);
-      svc.track(AnalyticsEvents.clipboardPromptShown);
-      svc.track(AnalyticsEvents.itemCollected, props: {'source': 'clipboard'});
-      svc.track(AnalyticsEvents.itemCardCreated);
+      svc.track(AnalyticsEvents.itemCollected, props: {'source': 'study'});
       svc.track(AnalyticsEvents.reviewRating, props: {'quality': 3});
       svc.track(AnalyticsEvents.reviewSessionCompleted, props: {'count': 5});
       svc.track(AnalyticsEvents.paywallShown, props: {'reason': '配额'});
+      svc.track(AnalyticsEvents.exportUsed);
 
-      expect(svc.events, hasLength(7));
+      expect(svc.events, hasLength(6));
     });
   });
 

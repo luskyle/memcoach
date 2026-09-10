@@ -1,18 +1,16 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/database/database.dart';
+import '../../data/repositories/item_repository.dart';
 import '../../providers.dart';
 import '../../shared/empty_state.dart';
-import '../inbox/item_actions.dart';
-import '../library/media_library_screen.dart';
+import '../library/card_edit_sheet.dart';
 import 'memory_set_browse_screen.dart';
 import 'memory_set_review_screen.dart';
 
 /// 记忆管理（记忆教练）：用户自建「记忆集」，
-/// 对集合整体学习/复习/回顾。集合可拉入素材自动成卡，或拉入已有收藏。
+/// 对集合整体学习/复习/回顾。集合可拉入已有收藏。
 class MemoryManagerScreen extends ConsumerWidget {
   const MemoryManagerScreen({super.key});
 
@@ -40,7 +38,7 @@ class MemoryManagerScreen extends ConsumerWidget {
               child: EmptyState(
                 icon: Icons.workspaces_outline,
                 title: '还没有记忆集',
-                subtitle: '建一个集合（如「考证刷题」），把素材或收藏拉进来，'
+                subtitle: '建一个集合（如「考证刷题」），把已有收藏拉进来，'
                     '就能对集合整体复习。',
               ),
             );
@@ -163,7 +161,7 @@ final _memorySetCountProvider =
   return (await repo.itemsOf(setId)).length;
 });
 
-/// 记忆集详情：条目列表 + 拉入素材/收藏 + 开始复习 + 浏览回顾。
+/// 记忆集详情：条目列表 + 拉入收藏 + 开始复习 + 浏览回顾。
 class MemorySetDetailScreen extends ConsumerWidget {
   const MemorySetDetailScreen({super.key, required this.setId});
 
@@ -180,9 +178,9 @@ class MemorySetDetailScreen extends ConsumerWidget {
         title: Text(detail.valueOrNull?.set.name ?? '记忆集'),
         actions: [
           IconButton(
-            tooltip: '添加素材',
-            icon: const Icon(Icons.add_photo_alternate_outlined),
-            onPressed: () => _addAssets(context, ref),
+            tooltip: '添加收藏',
+            icon: const Icon(Icons.playlist_add_outlined),
+            onPressed: () => _addLibraryItems(context, ref),
           ),
         ],
       ),
@@ -236,8 +234,8 @@ class MemorySetDetailScreen extends ConsumerWidget {
                         child: Padding(
                           padding: EdgeInsets.all(24),
                           child: Text(
-                            '集合还是空的。\n点右上角「添加素材」从素材库批量拉入（自动成卡），'
-                            '或去记忆库把收藏加进来。',
+                            '集合还是空的。\n点右上角「添加收藏」从记忆库把卡片拉进来，'
+                            '之后就能对集合整体复习。',
                             textAlign: TextAlign.center,
                           ),
                         ),
@@ -277,7 +275,7 @@ class MemorySetDetailScreen extends ConsumerWidget {
                                       value: 'remove', child: Text('移出集合')),
                                 ],
                               ),
-                              onTap: () => ItemActions.open(context, ref, it),
+                              onTap: () => CardEditSheet.open(context, ref, it),
                             ),
                           );
                         },
@@ -290,38 +288,52 @@ class MemorySetDetailScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _addAssets(BuildContext context, WidgetRef ref) async {
-    final assets = await ref.read(mediaAssetsProvider.future);
+  /// 从记忆库批量拉入已有收藏（卡片）到集合。
+  Future<void> _addLibraryItems(BuildContext context, WidgetRef ref) async {
+    final libraryItems = await ref.read(libraryItemsProvider.future);
     if (!context.mounted) return;
-    if (assets.isEmpty) {
+    if (libraryItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('素材库为空，先去「素材库」链接本地目录')),
-      );
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const MediaLibraryScreen()),
+        const SnackBar(content: Text('记忆库还是空的，先去「学习」背几张卡')),
       );
       return;
     }
-    // 素材多选弹层
-    final picked = <MediaAssetRow>[];
-    final result = await showModalBottomSheet<bool>(
+    final inSetIds =
+        (await ref.read(memorySetRepositoryProvider).itemsOf(setId))
+            .map((it) => it.item.id)
+            .toSet();
+    if (!context.mounted) return;
+    final candidates = libraryItems
+        .where((it) => !inSetIds.contains(it.item.id))
+        .toList();
+    if (candidates.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('记忆库的卡片都已在这个集合里')),
+      );
+      return;
+    }
+    final picked = <int>{};
+    final ok = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
-      builder: (_) => _AssetMultiPicker(
-        assets: assets,
-        selected: picked,
+      builder: (_) => _LibraryPicker(
+        items: candidates,
+        picked: picked,
+        title: '选择收藏（多选）',
       ),
     );
-    if (result == true && picked.isNotEmpty && context.mounted) {
-      final setRepo = ref.read(memorySetRepositoryProvider);
-      await setRepo.addMediaAssets(setId, picked);
-      if (!context.mounted) return;
-      ref.invalidate(memorySetDetailProvider(setId));
-      ref.invalidate(_memorySetCountProvider(setId));
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('已加入 ${picked.length} 个素材，自动成卡')),
-      );
+    if (ok != true || picked.isEmpty) return;
+    if (!context.mounted) return;
+    final setRepo = ref.read(memorySetRepositoryProvider);
+    for (final itemId in picked) {
+      await setRepo.addItem(setId, itemId);
     }
+    if (!context.mounted) return;
+    ref.invalidate(memorySetDetailProvider(setId));
+    ref.invalidate(_memorySetCountProvider(setId));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('已加入 ${picked.length} 个收藏')),
+    );
   }
 
   void _removeItem(BuildContext context, WidgetRef ref, int itemId) {
@@ -347,70 +359,62 @@ class MemorySetDetailScreen extends ConsumerWidget {
   }
 }
 
-/// 素材多选弹层。
-class _AssetMultiPicker extends StatefulWidget {
-  const _AssetMultiPicker({required this.assets, required this.selected});
+/// 记忆库卡片多选弹层（拉入记忆集）。
+class _LibraryPicker extends StatefulWidget {
+  const _LibraryPicker({
+    required this.items,
+    required this.picked,
+    required this.title,
+  });
 
-  final List<MediaAssetRow> assets;
-  final List<MediaAssetRow> selected;
+  final List<ItemWithCard> items;
+  final Set<int> picked;
+  final String title;
 
   @override
-  State<_AssetMultiPicker> createState() => _AssetMultiPickerState();
+  State<_LibraryPicker> createState() => _LibraryPickerState();
 }
 
-class _AssetMultiPickerState extends State<_AssetMultiPicker> {
-  final Set<int> _checked = {};
-
+class _LibraryPickerState extends State<_LibraryPicker> {
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('选择素材（多选，自动成卡）',
-                style: Theme.of(context).textTheme.titleMedium),
+            Text(widget.title, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             Flexible(
               child: SizedBox(
-                height: 320,
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 120,
-                    mainAxisSpacing: 8,
-                    crossAxisSpacing: 8,
-                  ),
-                  itemCount: widget.assets.length,
+                height: 360,
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: widget.items.length,
                   itemBuilder: (_, i) {
-                    final a = widget.assets[i];
-                    final sel = _checked.contains(a.id);
-                    return InkWell(
-                      onTap: () => setState(() {
-                        if (sel) {
-                          _checked.remove(a.id);
+                    final it = widget.items[i];
+                    final sel = widget.picked.contains(it.item.id);
+                    return CheckboxListTile(
+                      dense: true,
+                      value: sel,
+                      title: Text(
+                        it.card?.prompt ?? '',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Text(
+                        it.card?.answer ?? '',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      onChanged: (v) => setState(() {
+                        if (v == true) {
+                          widget.picked.add(it.item.id);
                         } else {
-                          _checked.add(a.id);
+                          widget.picked.remove(it.item.id);
                         }
                       }),
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: MediaThumb(asset: a),
-                          ),
-                          if (sel)
-                            Container(
-                              color: scheme.primary.withValues(alpha: 0.25),
-                              alignment: Alignment.topRight,
-                              padding: const EdgeInsets.all(4),
-                              child: const Icon(Icons.check_circle,
-                                  size: 18, color: Colors.white),
-                            ),
-                        ],
-                      ),
                     );
                   },
                 ),
@@ -420,50 +424,15 @@ class _AssetMultiPickerState extends State<_AssetMultiPicker> {
             SizedBox(
               width: double.infinity,
               child: FilledButton(
-                onPressed: _checked.isEmpty
+                onPressed: widget.picked.isEmpty
                     ? null
-                    : () {
-                        widget.selected
-                          ..clear()
-                          ..addAll(widget.assets
-                              .where((a) => _checked.contains(a.id)));
-                        Navigator.pop(context, true);
-                      },
-                child: Text('加入（${_checked.length}）'),
+                    : () => Navigator.pop(context, true),
+                child: Text('加入（${widget.picked.length}）'),
               ),
             ),
           ],
         ),
       ),
     );
-  }
-}
-
-/// 素材缩略图（选择器用）。
-class MediaThumb extends StatelessWidget {
-  const MediaThumb({super.key, required this.asset});
-
-  final MediaAssetRow asset;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    if (asset.type == 'video') {
-      return Container(
-        color: scheme.surfaceContainerHighest,
-        alignment: Alignment.center,
-        child: Icon(Icons.videocam_outlined,
-            color: scheme.onSurfaceVariant, size: 24),
-      );
-    }
-    if (asset.path.isNotEmpty && File(asset.path).existsSync()) {
-      return Image.file(
-        File(asset.path),
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) =>
-            Icon(Icons.broken_image_outlined, color: scheme.onSurfaceVariant),
-      );
-    }
-    return Icon(Icons.broken_image_outlined, color: scheme.onSurfaceVariant);
   }
 }

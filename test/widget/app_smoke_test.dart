@@ -9,12 +9,9 @@ import 'package:shiyi/data/settings/settings_store.dart';
 import 'package:shiyi/features/settings/settings_screen.dart';
 import 'package:shiyi/providers.dart';
 
-/// 测试环境公共搭建：内存库 + 关闭剪贴板监听的设置。
+/// 测试环境公共搭建：内存库。
 Future<ProviderContainer> buildTestContainer() async {
-  SharedPreferences.setMockInitialValues({
-    // 关闭剪贴板监听，避免测试中出现轮询 Timer
-    'settings.clipboard_watch': false,
-  });
+  SharedPreferences.setMockInitialValues({});
   final prefs = await SharedPreferences.getInstance();
   final container = ProviderContainer(
     overrides: [
@@ -36,7 +33,7 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const ShiyiApp(),
+        child: const MemcoachApp(),
       ),
     );
     await tester.pumpAndSettle();
@@ -45,7 +42,12 @@ void main() {
     expect(find.text('今日复习'), findsOneWidget);
     expect(find.text('今天还没有复习任务'), findsOneWidget);
 
-    // 窄屏两主 tab：切到学习
+    // 底栏三主 tab：切到记忆库
+    await tester.tap(find.text('记忆库'));
+    await tester.pumpAndSettle();
+    expect(find.text('卡片库还空着'), findsOneWidget);
+
+    // 切到学习
     await tester.tap(find.text('学习'));
     await tester.pumpAndSettle();
     expect(find.text('日语'), findsWidgets); // 学习页语言包列表
@@ -65,7 +67,7 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const ShiyiApp(),
+        child: const MemcoachApp(),
       ),
     );
     await tester.pumpAndSettle();
@@ -86,17 +88,17 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const ShiyiApp(),
+        child: const MemcoachApp(),
       ),
     );
     await tester.pumpAndSettle();
 
-    // iOS 侧栏元素：大标题「拾忆」/ 导航 / 分组
-    expect(find.text('拾忆'), findsOneWidget);
+    // iOS 侧栏元素：大标题 / 导航 / 分组
+    expect(find.text('Memcoach'), findsOneWidget);
     expect(find.text('今日复习'), findsOneWidget);
     expect(find.text('分组'), findsOneWidget);
 
-    // 窄屏三 Tab 不再渲染
+    // 窄屏底栏不再渲染
     expect(find.byType(NavigationBar), findsNothing);
     // 仍显示复习页默认落点内容
     expect(find.text('今天还没有复习任务'), findsOneWidget);
@@ -119,7 +121,7 @@ void main() {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const ShiyiApp(),
+        child: const MemcoachApp(),
       ),
     );
     await tester.pumpAndSettle();

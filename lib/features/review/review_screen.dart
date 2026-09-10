@@ -33,7 +33,7 @@ class ReviewScreen extends ConsumerWidget {
           return const EmptyState(
             icon: Icons.school_outlined,
             title: '今天还没有复习任务',
-            subtitle: '收藏第一件内容，或在收件箱里把待归类的内容成卡，\n它会自动安排明天的首次复习。',
+            subtitle: '去「学习」学几个新词，或先记点什么，\n它会自动安排明天的首次复习。',
           );
         }
 

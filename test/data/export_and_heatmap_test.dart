@@ -51,7 +51,7 @@ void main() {
         now: now.add(const Duration(days: 2)));
   }
 
-  test('导出 zip：内含 shiyi_data.json 与 README，数据完整', () async {
+  test('导出 zip：内含 memcoach_data.json 与 README，数据完整', () async {
     exportDir = await Directory.systemTemp.createTemp('export_test');
     addTearDown(() => exportDir.delete(recursive: true));
     await seedLogs();
@@ -62,13 +62,13 @@ void main() {
 
     final bytes = File(path).readAsBytesSync();
     final archive = ZipDecoder().decodeBytes(bytes);
-    expect(archive.findFile('shiyi_data.json'), isNotNull);
+    expect(archive.findFile('memcoach_data.json'), isNotNull);
     expect(archive.findFile('README.txt'), isNotNull);
 
-    final rawJson = archive.findFile('shiyi_data.json')!.content;
+    final rawJson = archive.findFile('memcoach_data.json')!.content;
     final payload =
         jsonDecode(utf8.decode(rawJson as List<int>)) as Map<String, dynamic>;
-    expect(payload['app'], 'shiyi');
+    expect(payload['app'], 'memcoach');
     expect(payload['items'], hasLength(1));
     expect(payload['review_logs'], hasLength(2));
     expect(payload['cards'], hasLength(1));

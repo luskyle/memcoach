@@ -8,7 +8,7 @@ import 'package:path/path.dart' as p;
 ///
 /// 用途：
 /// - 本地 JSONL 落盘（append-only，随日期分文件）——离线可用、可回放
-/// - 上报占位：接入轻量服务器/Supabase 后，在 [track] 内追加 POST（媒体永不外传）
+/// - 上报占位：接入轻量服务器/Supabase 后，在 [track] 内追加 POST
 class AnalyticsEvents {
   AnalyticsEvents._();
 
@@ -16,7 +16,6 @@ class AnalyticsEvents {
   static const appResume = 'app_resume';
   static const appBackground = 'app_background';
   static const appTabViewed = 'app_tab_viewed';
-  static const clipboardPromptShown = 'clipboard_prompt_shown';
   static const itemCollected = 'item_collected';
   static const itemCardCreated = 'item_card_created';
   static const reviewRating = 'review_rating';

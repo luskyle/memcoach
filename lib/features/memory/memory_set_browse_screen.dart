@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers.dart';
-import '../inbox/item_actions.dart';
-import '../library/media_library_screen.dart';
+import '../library/card_edit_sheet.dart';
 
-/// 记忆集浏览回顾：平铺展示集合内所有内容（含素材预览）。
+/// 记忆集浏览回顾：平铺展示集合内所有内容。
 class MemorySetBrowseScreen extends ConsumerWidget {
   const MemorySetBrowseScreen({super.key, required this.setId});
 
@@ -37,17 +36,6 @@ class MemorySetBrowseScreen extends ConsumerWidget {
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
                 child: ListTile(
-                  leading: it.item.mediaAssetId != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: SizedBox(
-                            width: 44,
-                            height: 44,
-                            child:
-                                SourceMediaView(assetId: it.item.mediaAssetId!),
-                          ),
-                        )
-                      : null,
                   title: Text(
                     it.card?.prompt ?? '',
                     maxLines: 1,
@@ -59,7 +47,7 @@ class MemorySetBrowseScreen extends ConsumerWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  onTap: () => ItemActions.open(context, ref, it),
+                  onTap: () => CardEditSheet.open(context, ref, it),
                 ),
               );
             },
