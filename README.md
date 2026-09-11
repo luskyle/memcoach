@@ -90,3 +90,7 @@ git tag v0.2.0 && git push origin v0.2.0
 - 云盘同步 B 档、云端日志 C 档（V1.2 / V2）
 - 内购接入（阶段 2，当前订阅墙为方案占位）
 - 词库管线：Python 清洗 JLPT/COCA → JSON 导入（当前为内置微型样例词库）
+
+## 开源协议
+
+本项目采用 [Apache License 2.0](LICENSE) 开源。
