@@ -1,7 +1,7 @@
 name: memcoach
-description: Memcoach 记忆教练 —— 间隔重复记忆训练（复习 / 记忆库 / 记忆集 / 学习插件）。
+description: Memcoach 记忆教练 —— 自评强度·智能训练·社区训练集（SM-2 间隔重复）。
 publish_to: "none"
-version: 0.1.0+1
+version: 0.2.0+1
 
 environment:
   sdk: ">=3.6.0 <4.0.0"
