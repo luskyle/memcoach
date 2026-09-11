@@ -1,27 +1,45 @@
 # Memcoach 记忆教练
 
-> 你的记忆教练：把想记住的任何东西——单词、摘抄、灵感——收进来，
-> App 用间隔重复（SM-2）自动安排复习，直到你真正记住。
+> 你的记忆教练：先自评状态（很好 / 一般 / 很差），App 匹配对应训练强度
+> （Max / 中等 / 轻松），把社区下载的训练集与到期卡片智能组队，
+> 用间隔重复（SM-2）帮你真正记住——遗忘曲线证明进步。
 
 依据《记忆教练App架构设计》《开发计划-分阶段功能路线》《技术调研-核心技术选型》
-（vpub/docs/强化记忆）实现的 **记忆侧独立版**（复习闭环 + 记忆库 + 主动学习 + 记忆集）。
+实现的 **训练侧独立版**（训练闭环 + 社区训练集）。
+
+## 界面预览
+
+<div align="center">
+  <table>
+    <tr>
+      <td align="center"><b>训练 · 自评强度</b></td>
+      <td align="center"><b>社区 · 训练集</b></td>
+    </tr>
+    <tr>
+      <td><img src="docs/images/mockup-train.svg" width="230" alt="训练页效果图"/></td>
+      <td><img src="docs/images/mockup-community.svg" width="230" alt="社区页效果图"/></td>
+    </tr>
+  </table>
+</div>
 
 ## 当前版本能力（v0.2.0）
 
-- **三 Tab 常驻**：复习（默认落点）/ 记忆库 / 学习，IndexedStack 保状态
-- **复习闭环**：闪卡先猜后看（翻转动画）、三键评级（忘了/模糊/记得）→ SM-2 调度
-- **主动学习**：按语言分级渐进解锁（日语/英语免费，其余 Pro），学会自动进复习队列
-- **内容插件**：翻卡 / 单选 / 填空（内置语言 + 古诗词内容）
-- **记忆库**：全文搜索、语言/状态筛选、分组视图 + 分组掌握率、卡片编辑
-- **记忆管理（记忆集）**：把收藏拉进自建集合，对集合整体复习/回顾
-- **数据证明**：遗忘曲线（fl_chart 周视图，个人正确率 vs 理论基线）、掌握率/积压统计
-- **免费额度**：非 Pro 无限复习、记忆库 100 张（超限引导订阅）
-- **数据所有权**：全部数据本地存储（drift/SQLite，本地优先离线词库），一键导出 JSON
+- **两 Tab 常驻**：训练（默认落点）/ 社区，IndexedStack 保状态
+- **自评强度训练**：状态很好 → Max 强度 · 状态一般 → 中等 · 状态很差 → 轻松；
+  强度决定一轮题量、SM-2 间隔增幅、新卡 vs 复习卡比例、时长上限
+- **训练闭环**：已下载训练集的新卡 + 到期卡片智能组队，闪卡先猜后看、
+  三键评级（忘了 / 模糊 / 记得）→ SM-2 调度
+- **社区训练集**：翻卡 / 单选 / 填空三类玩法（内置古诗词、英语常用词、
+  日语基础词、趣味常识），下载即训；内容目录抽象化（内置 + 预留远程）
+- **数据证明**：遗忘曲线（fl_chart 周视图，个人正确率 vs 理论基线）、
+  掌握率 / 积压 / 每日训练热力图
+- **免费额度**：非 Pro 无限训练、卡片 100 张（超限引导订阅）
+- **数据所有权**：全部数据本地存储（drift/SQLite，本地优先），一键导出 JSON
 
 ## 技术栈（按技术调研选型）
 
-Flutter（stable 线） · Riverpod（flutter_riverpod，无 codegen 简化初版） ·
-drift（SQLite，7 张表：words/cards/items/review_log/collections/item_collections/item_tags）·
+Flutter（stable 线） · Riverpod（flutter_riverpod，无 codegen） ·
+drift（SQLite，6 张表：words/cards/items/review_log/item_tags/training_sets）·
 fl_chart · shared_preferences（设置 KV）
 
 ## 工程结构（feature-first）
@@ -29,10 +47,11 @@ fl_chart · shared_preferences（设置 KV）
 ```
 lib/
   core/       主题
-  domain/     SM-2 引擎、语言识别（纯 Dart，无 Flutter 依赖，可单独单测）
-  data/       drift 表/库、仓储（收藏/复习/统计）、离线词库、设置、导出
-  features/   inbox（收件箱）/ review（复习+曲线）/ library（记忆库）/ settings
-  shared/     空态、徽标等通用组件
+  domain/     SM-2 引擎、训练强度（纯 Dart，可单独单测）
+  content/    训练集内容模型 + 内置目录（远程目录扩展点）
+  data/       drift 表/库、仓储（训练集/训练/统计）、设置、导出
+  features/   training（训练）/ community（社区）/ settings
+  shared/     空态、大标题等通用组件
 ```
 
 ## 开发命令
@@ -80,8 +99,10 @@ git tag v0.2.0 && git push origin v0.2.0
 - `test/domain/sm2_test.dart`：SM-2 引擎 20+ 用例（忘记/模糊/记得、间隔边界、
   重学路径、EF 钳制 1.3~3.0、到期判定、掌握度投影、长周期稳定性）
 - `test/domain/language_test.dart`：多语言自动标注启发式
-- `test/widget/app_smoke_test.dart`：三 Tab 切换与空态
-- `test/widget/review_flow_test.dart`：复习闭环（翻卡→评级→落库）、重学路径、状态投影
+- `test/domain/training_intensity_test.dart`：强度预设（题量/新卡比/间隔增幅/时长）与间隔钳制
+- `test/data/training_set_repository_test.dart`：训练集安装、按需引入、卸载保留已训练卡
+- `test/widget/app_smoke_test.dart`：两 Tab 导航与空态
+- `test/widget/training_flow_test.dart`：训练闭环（翻卡→评级→落库）、重学路径、状态投影
 
 ## 与规划的差距（后续版本）
 

@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="740" viewBox="0 0 360 740" font-family="-apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif">
+  <!-- 机身 -->
+  <rect x="0" y="0" width="360" height="740" rx="44" fill="#1B2430"/>
+  <!-- 屏幕 -->
+  <rect x="12" y="12" width="336" height="716" rx="32" fill="#FFFFFF"/>
+
+  <!-- 状态栏 -->
+  <text x="36" y="52" font-size="13" font-weight="700" fill="#1B2430">9:41</text>
+  <text x="272" y="52" font-size="11" fill="#1B2430" text-anchor="middle">🔋 100%</text>
+  <!-- 挖孔 -->
+  <rect x="140" y="22" width="80" height="18" rx="9" fill="#1B2430"/>
+
+  <!-- 顶栏 -->
+  <text x="36" y="106" font-size="24" font-weight="800" fill="#1B2430">训练</text>
+  <circle cx="316" cy="94" r="14" fill="#F6F8FC"/>
+  <circle cx="316" cy="94" r="5" fill="#5A6B80"/>
+
+  <!-- 提示 + 标题 -->
+  <text x="36" y="142" font-size="12" fill="#5A6B80">没有训练中的任务，先自评状态</text>
+  <text x="36" y="174" font-size="15" font-weight="700" fill="#1B2430">自我评估状态</text>
+
+  <!-- 强度卡 1：状态很好（选中） -->
+  <rect x="28" y="188" width="304" height="74" rx="14" fill="#EAF0FF" stroke="#2F6BFF" stroke-width="1.5"/>
+  <rect x="44" y="204" width="30" height="30" rx="9" fill="#FFF1E6"/>
+  <text x="59" y="226" font-size="14" text-anchor="middle">⚡</text>
+  <text x="86" y="218" font-size="14" font-weight="700" fill="#1B2430">状态很好</text>
+  <text x="86" y="236" font-size="11" fill="#5A6B80">Max 强度模式 · 约 30 张</text>
+  <circle cx="314" cy="225" r="6" fill="#2F6BFF"/>
+
+  <!-- 强度卡 2：状态一般 -->
+  <rect x="28" y="274" width="304" height="74" rx="14" fill="#F6F8FC"/>
+  <rect x="44" y="290" width="30" height="30" rx="9" fill="#EAF0FF"/>
+  <text x="59" y="312" font-size="14" text-anchor="middle">📈</text>
+  <text x="86" y="304" font-size="14" font-weight="700" fill="#1B2430">状态一般</text>
+  <text x="86" y="322" font-size="11" fill="#5A6B80">中等训练强度 · 约 20 张</text>
+  <circle cx="314" cy="311" r="6" fill="none" stroke="#E3E9F2" stroke-width="2"/>
+
+  <!-- 强度卡 3：状态很差 -->
+  <rect x="28" y="360" width="304" height="74" rx="14" fill="#F6F8FC"/>
+  <rect x="44" y="376" width="30" height="30" rx="9" fill="#E3F9E9"/>
+  <text x="59" y="398" font-size="14" text-anchor="middle">🪷</text>
+  <text x="86" y="390" font-size="14" font-weight="700" fill="#1B2430">状态很差</text>
+  <text x="86" y="408" font-size="11" fill="#5A6B80">轻松训练模式 · 约 10 张</text>
+  <circle cx="314" cy="397" r="6" fill="none" stroke="#E3E9F2" stroke-width="2"/>
+
+  <!-- 开始训练 -->
+  <rect x="28" y="452" width="304" height="46" rx="11" fill="#2F6BFF"/>
+  <text x="180" y="482" font-size="15" font-weight="700" fill="#FFFFFF" text-anchor="middle">开始训练</text>
+
+  <!-- 统计 -->
+  <rect x="28" y="516" width="94" height="66" rx="12" fill="#F6F8FC"/>
+  <text x="75" y="544" font-size="18" font-weight="800" fill="#2F6BFF" text-anchor="middle">12</text>
+  <text x="75" y="563" font-size="10" fill="#5A6B80" text-anchor="middle">到期复习</text>
+  <rect x="133" y="516" width="94" height="66" rx="12" fill="#F6F8FC"/>
+  <text x="180" y="544" font-size="18" font-weight="800" fill="#2F6BFF" text-anchor="middle">68%</text>
+  <text x="180" y="563" font-size="10" fill="#5A6B80" text-anchor="middle">掌握率</text>
+  <rect x="238" y="516" width="94" height="66" rx="12" fill="#F6F8FC"/>
+  <text x="285" y="544" font-size="18" font-weight="800" fill="#2F6BFF" text-anchor="middle">3</text>
+  <text x="285" y="563" font-size="10" fill="#5A6B80" text-anchor="middle">今日已训练</text>
+
+  <!-- 底部导航 -->
+  <line x1="12" y1="648" x2="348" y2="648" stroke="#E3E9F2"/>
+  <rect x="60" y="660" width="60" height="34" rx="10" fill="#EAF0FF"/>
+  <text x="90" y="682" font-size="13" font-weight="700" fill="#2F6BFF" text-anchor="middle">训练</text>
+  <text x="270" y="682" font-size="13" fill="#5A6B80" text-anchor="middle">社区</text>
+</svg>
