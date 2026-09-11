@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>记忆教练 Memcoach —— 收藏驱动的记忆工具</title>
-<meta name="description" content="把你想记住的任何东西收进来：单词、摘抄、灵感、考纲。浏览器划词收藏直达你的分类，记忆教练用间隔重复（SM-2）自动安排复习，用真实数据证明你的记忆在变好。">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
+<title>记忆教练 Memcoach —— 自评强度 · 智能训练 · 社区训练集</title>
+<meta name="description" content="Memcoach 记忆教练：先自评状态（很好 / 一般 / 很差），App 据此匹配训练强度（Max / 中等 / 轻松），把下载的训练集与到期卡片智能组队，用间隔重复（SM-2）帮你真正记住，并用遗忘曲线证明进步。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧠</text></svg>">
 <style>
   :root {
     --primary: #2F6BFF;
@@ -62,7 +62,7 @@
     background:
       radial-gradient(600px 300px at 85% 0%, #EAF0FF 0%, transparent 60%),
       linear-gradient(180deg, #F7FAFF 0%, #FFFFFF 100%);
-    padding: 96px 0 72px;
+    padding: 88px 0 96px;
     text-align: center;
   }
   header .kicker {
@@ -70,51 +70,79 @@
     background: var(--primary-soft); padding: 6px 14px; border-radius: 999px;
     margin-bottom: 20px;
   }
-  header h1 { font-size: 52px; line-height: 1.25; letter-spacing: -1px; font-weight: 800; }
+  header h1 { font-size: 50px; line-height: 1.25; letter-spacing: -1px; font-weight: 800; }
   header h1 em { font-style: normal; color: var(--primary); }
-  header .sub { margin: 20px auto 32px; max-width: 560px; color: var(--ink-2); font-size: 17px; }
+  header .sub { margin: 20px auto 32px; max-width: 600px; color: var(--ink-2); font-size: 17px; }
   .hero-cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
-  .hero-meta { margin-top: 28px; font-size: 13px; color: var(--ink-2); }
+  .hero-meta { margin-top: 26px; font-size: 13px; color: var(--ink-2); }
 
-  /* App 窗口 mock */
-  .mock {
-    margin: 64px auto 0; max-width: 860px; text-align: left;
-    border: 1px solid var(--line); border-radius: 18px; overflow: hidden;
-    box-shadow: 0 24px 60px rgba(31,56,120,.16);
-    background: var(--bg);
+  /* ---------- 手机效果图 ---------- */
+  .phones {
+    display: grid; grid-template-columns: repeat(2, 330px); gap: 30px;
+    justify-content: center; margin-top: 60px;
   }
-  .mock-bar {
-    display: flex; gap: 6px; align-items: center;
-    padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--bg-soft);
+  .phone {
+    width: 300px; margin: 0 auto;
+    border-radius: 38px; border: 8px solid #1B2430; background: #fff;
+    box-shadow: 0 28px 64px rgba(31,56,120,.22); overflow: hidden; text-align: left;
   }
-  .mock-bar i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-  .mock-bar i:nth-child(1) { background: #FF5F57; }
-  .mock-bar i:nth-child(2) { background: #FEBC2E; }
-  .mock-bar i:nth-child(3) { background: #28C840; }
-  .mock-bar .mock-title { margin-left: 10px; font-size: 12px; color: var(--ink-2); }
-  .mock-body { display: grid; grid-template-columns: 180px 1fr; min-height: 300px; }
-  .mock-side {
-    border-right: 1px solid var(--line); background: var(--bg-soft);
-    padding: 16px 12px; display: flex; flex-direction: column; gap: 6px;
+  .phone .pstatus {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 20px 2px; font-size: 10px; font-weight: 700; color: var(--ink-2);
   }
-  .mock-side span { font-size: 12px; color: var(--ink-2); padding: 6px 10px; border-radius: 8px; }
-  .mock-side .active { background: var(--primary); color: #fff; font-weight: 600; }
-  .mock-main { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
-  .mock-search {
-    border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px;
-    font-size: 12px; color: var(--ink-2); background: var(--bg-soft);
+  .phone .pcap { width: 60px; height: 18px; border-radius: 999px; background: #1B2430; margin: 4px auto 0; }
+  .phone .pbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 18px 4px;
   }
-  .mock-card {
-    border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px;
-    display: flex; align-items: center; gap: 12px;
+  .phone .pbar b { font-size: 18px; }
+  .phone .pbar .pico {
+    width: 26px; height: 26px; border-radius: 8px; background: var(--bg-soft);
+    display: grid; place-items: center; font-size: 13px;
   }
-  .mock-card .badge { font-size: 11px; color: var(--primary); background: var(--primary-soft); padding: 2px 8px; border-radius: 999px; }
-  .mock-card .time { font-size: 11px; color: var(--ink-2); margin-left: auto; }
+  .phone .pbody { padding: 10px 14px 14px; }
+  .phone .plabel { font-size: 12px; font-weight: 700; color: var(--ink); margin: 8px 0 8px; }
+  .phone .ptip { font-size: 10px; color: var(--ink-2); margin-bottom: 8px; }
+
+  /* 训练页：强度自评卡 */
+  .pint {
+    display: flex; align-items: center; gap: 8px;
+    border: 1px solid var(--line); border-radius: 12px; padding: 8px 10px; margin-bottom: 8px;
+  }
+  .pint.active { border-color: var(--primary); background: var(--primary-soft); }
+  .pint .dot { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; font-size: 13px; }
+  .pint b { display: block; font-size: 12px; }
+  .pint small { font-size: 10px; color: var(--ink-2); }
+  .pint .sel { margin-left: auto; font-size: 12px; color: var(--primary); }
+  .pbtn {
+    background: var(--primary); color: #fff; border-radius: 10px;
+    text-align: center; padding: 10px; font-size: 13px; font-weight: 700; margin-top: 10px;
+  }
+  .pstat { display: flex; gap: 8px; margin-top: 10px; }
+  .pstat div { flex: 1; border: 1px solid var(--line); border-radius: 10px; padding: 8px; text-align: center; }
+  .pstat b { display: block; font-size: 14px; color: var(--primary); }
+  .pstat small { font-size: 9px; color: var(--ink-2); }
+
+  /* 社区页：训练集列表 */
+  .pset {
+    display: flex; align-items: center; gap: 8px;
+    border: 1px solid var(--line); border-radius: 12px; padding: 9px 10px; margin-bottom: 8px;
+  }
+  .pset .ic { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; font-size: 15px; }
+  .pset .tag { font-size: 9px; font-weight: 700; color: var(--primary); background: var(--primary-soft); padding: 1px 6px; border-radius: 999px; }
+  .pset small { font-size: 9px; color: var(--ink-2); }
+  .pset .ok { margin-left: auto; font-size: 10px; color: #1E8E4E; font-weight: 700; }
+  .pnav {
+    display: flex; border-top: 1px solid var(--line); background: #fff;
+  }
+  .pnav div { flex: 1; text-align: center; padding: 8px 0 12px; font-size: 10px; color: var(--ink-2); }
+  .pnav div b { display: block; font-size: 15px; }
+  .pnav div.on { color: var(--primary); font-weight: 700; }
 
   /* ---------- 区块 ---------- */
   section { padding: 88px 0; }
   section.alt { background: var(--bg-soft); }
-  .sec-head { text-align: center; max-width: 640px; margin: 0 auto 48px; }
+  .sec-head { text-align: center; max-width: 680px; margin: 0 auto 48px; }
   .sec-head h2 { font-size: 34px; letter-spacing: -0.5px; font-weight: 800; }
   .sec-head p { margin-top: 12px; color: var(--ink-2); }
 
@@ -134,7 +162,7 @@
   .card ul li { padding-left: 18px; position: relative; margin-bottom: 4px; }
   .card ul li::before { content: "✓"; position: absolute; left: 0; color: var(--primary); font-weight: 700; }
 
-  /* 管道流程 */
+  /* 训练流程 */
   .flow { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0; align-items: center; }
   .flow .step { text-align: center; padding: 12px 6px; }
   .flow .step .n {
@@ -146,11 +174,17 @@
   .flow .step small { font-size: 12px; color: var(--ink-2); }
   .flow .arrow { color: var(--line); font-size: 20px; text-align: center; }
 
+  /* 强度四维 */
+  .dim { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 28px; }
+  .dim .d { background: var(--bg-soft); border-radius: 14px; padding: 20px 18px; text-align: center; }
+  .dim .d b { display: block; font-size: 26px; color: var(--primary); }
+  .dim .d small { font-size: 12px; color: var(--ink-2); }
+
   /* 隐私横幅 */
   .privacy {
     background: linear-gradient(120deg, #16305F 0%, #2F6BFF 100%);
     color: #fff; border-radius: 22px; padding: 44px 40px;
-    display: grid; grid-template-columns: 1.2fr 1fr; gap: 32px; align-items: center;
+    grid-template-columns: 1.2fr 1fr; gap: 32px; align-items: center;
   }
   .privacy h2 { font-size: 26px; margin-bottom: 10px; }
   .privacy p { opacity: .85; font-size: 14px; margin-bottom: 8px; }
@@ -169,7 +203,7 @@
   .tag.later { background: #F1F3F7; color: var(--ink-2); }
 
   /* 下载 */
-  .dl { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  .dl { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
   .dl .card { text-align: center; }
   .dl .card .ico { margin: 0 auto 14px; }
   .dl .card a.btn { margin-top: 6px; }
@@ -182,13 +216,11 @@
   .fade.in { opacity: 1; transform: none; }
 
   @media (max-width: 860px) {
-    header h1 { font-size: 36px; }
-    .grid3, .grid2x2, .dl { grid-template-columns: 1fr; }
+    header h1 { font-size: 34px; }
+    .grid3, .grid2x2, .dl, .dim, .phones { grid-template-columns: 1fr; }
     .flow { grid-template-columns: repeat(3, 1fr); }
     .flow .arrow { display: none; }
     .privacy { grid-template-columns: 1fr; padding: 32px 24px; }
-    .mock-body { grid-template-columns: 1fr; }
-    .mock-side { display: none; }
     .nav-links { display: none; }
   }
 </style>
@@ -197,11 +229,11 @@
 
 <nav>
   <div class="wrap">
-    <a class="logo" href="#"><span class="mark">📖</span>记忆教练</a>
+    <a class="logo" href="#"><span class="mark">🧠</span>记忆教练</a>
     <div class="nav-links">
       <a href="#feature">功能</a>
-      <a href="#flow">如何工作</a>
-      <a href="#privacy">隐私</a>
+      <a href="#train">训练机制</a>
+      <a href="#community">社区训练集</a>
       <a href="#roadmap">路线图</a>
       <a href="#download">下载</a>
     </div>
@@ -212,46 +244,51 @@
 
 <header>
   <div class="wrap">
-    <span class="kicker">🗂️ 收藏 · 记忆 · 证明</span>
-    <h1>把想记住的任何东西<br>收进来，<em>它替你还</em></h1>
-    <p class="sub">单词、摘抄、灵感、考纲——浏览器划词或从任何 App 划进来，直接进你的分类。记忆教练用间隔重复（SM-2）自动安排复习，直到你真正记住。</p>
+    <span class="kicker">🎯 训练 · 🏘️ 社区 · 📈 证明</span>
+    <h1>先自评状态<br>再让 App <em>组队训练</em></h1>
+    <p class="sub">状态很好？Max 强度冲刺；状态欠佳？轻松模式巩固。Memcoach 把社区下载的训练集与到期卡片智能组队，用间隔重复（SM-2）帮你真正记住——遗忘曲线会证明进步。</p>
     <div class="hero-cta">
       <a class="btn" href="#download">下载 App</a>
       <a class="btn ghost" href="https://github.com/luskyle/memcoach/releases" target="_blank" rel="noopener">查看 Release</a>
     </div>
-    <div class="hero-meta">免费开源 · 本地优先 · 多端同步 · 数据永久属于你</div>
+    <div class="hero-meta">免费开源 · 本地优先 · 间隔重复 · 数据属于你</div>
 
-    <div class="mock fade">
-      <div class="mock-bar">
-        <i></i><i></i><i></i><span class="mock-title">记忆教练 Memcoach</span>
+    <div class="phones">
+      <!-- 效果图 1：训练页 -->
+      <div class="phone fade">
+        <div class="pstatus"><span>9:41</span><span>🔋 100%</span></div>
+        <div class="pcap"></div>
+        <div class="pbar"><b>训练</b><span class="pico">⚙️</span></div>
+        <div class="pbody">
+          <div class="ptip">没有训练中的任务，先自评状态 👇</div>
+          <div class="plabel">自我评估状态</div>
+          <div class="pint active"><span class="dot" style="background:#FFF1E6;">⚡</span><div><b>状态很好</b><small>Max 强度模式 · 约 30 张</small></div><span class="sel">●</span></div>
+          <div class="pint"><span class="dot" style="background:var(--primary-soft);">📈</span><div><b>状态一般</b><small>中等训练强度 · 约 20 张</small></div><span class="sel" style="color:var(--line);">○</span></div>
+          <div class="pint"><span class="dot" style="background:#E3F9E9;">🪷</span><div><b>状态很差</b><small>轻松训练模式 · 约 10 张</small></div><span class="sel" style="color:var(--line);">○</span></div>
+          <div class="pbtn">开始训练</div>
+          <div class="pstat">
+            <div><b>12</b><small>到期复习</small></div>
+            <div><b>68%</b><small>掌握率</small></div>
+            <div><b>3</b><small>今日已训练</small></div>
+          </div>
+        </div>
+        <div class="pnav"><div class="on"><b>💪</b>训练</div><div><b>🧭</b>社区</div></div>
       </div>
-      <div class="mock-body">
-        <div class="mock-side">
-          <span class="active">今日复习 · 3</span>
-          <span>学习 · 日语</span>
-          <span>分组</span>
-          <span>工作</span>
-          <span>学习</span>
-          <span>未分类</span>
+
+      <!-- 效果图 2：社区页 -->
+      <div class="phone fade">
+        <div class="pstatus"><span>9:41</span><span>🔋 100%</span></div>
+        <div class="pcap"></div>
+        <div class="pbar"><b>社区</b><span class="pico">⚙️</span></div>
+        <div class="pbody">
+          <div class="ptip">挑选感兴趣的训练类型，下载后开练</div>
+          <div class="plabel">训练集</div>
+          <div class="pset"><span class="ic" style="background:#EAF0FF;">📖</span><div><b>古诗词</b><span class="tag">填空</span><br><small>经典古诗挖空补全 · 32 首</small></div><span class="ok">已下载 ✓</span></div>
+          <div class="pset"><span class="ic" style="background:#EAF0FF;">🇬🇧</span><div><b>英语常用词</b><span class="tag">翻卡</span><br><small>50 个高频核心词</small></div><span class="ok">已下载 ✓</span></div>
+          <div class="pset"><span class="ic" style="background:#EAF0FF;">🇯🇵</span><div><b>日语基础词</b><span class="tag">翻卡</span><br><small>JLPT N5 高频词汇 · 60</small></div><span class="ok" style="color:var(--ink-2);">下载</span></div>
+          <div class="pset"><span class="ic" style="background:#EAF0FF;">🎯</span><div><b>趣味常识</b><span class="tag">单选</span><br><small>20 道常识趣味单选</small></div><span class="ok" style="color:var(--ink-2);">下载</span></div>
         </div>
-        <div class="mock-main">
-          <div class="mock-search">🔍 搜索收藏…</div>
-          <div class="mock-card">
-            <span class="badge">日</span>
-            <div><b>食べる</b><br><small>たべる · 吃</small></div>
-            <span class="time">明天复习</span>
-          </div>
-          <div class="mock-card">
-            <span class="badge">英</span>
-            <div><b>spaced repetition</b><br><small>间隔重复——复习的关键</small></div>
-            <span class="time">3 天后</span>
-          </div>
-          <div class="mock-card">
-            <span class="badge">中</span>
-            <div><b>把收藏变成记忆，而不是积灰</b><br><small>灵感 · 引自产品设计笔记</small></div>
-            <span class="time">明天复习</span>
-          </div>
-        </div>
+        <div class="pnav"><div><b>💪</b>训练</div><div class="on"><b>🧭</b>社区</div></div>
       </div>
     </div>
   </div>
@@ -260,51 +297,51 @@
 <section id="feature">
   <div class="wrap">
     <div class="sec-head fade">
-      <h2>四个支柱：收进来 · 记得住 · 学得会 · 看得见</h2>
-      <p>记忆教练不是一个剪藏夹——收藏只是开始，学习拉近记忆，复习负责记住，曲线负责证明。</p>
+      <h2>四个支柱：自评 · 组队 · 社区 · 证明</h2>
+      <p>训练不是傻刷题——强度跟着状态走，内容来自你想学的训练集，进步由真实日志证明。</p>
     </div>
     <div class="grid2x2">
       <div class="card fade">
-        <div class="ico">🖱️</div>
-        <h3>浏览器划词收藏</h3>
-        <p>网页选中即收藏：右键直达分组，写入你自己的 WebDAV 云盘，桌面秒级出现。</p>
+        <div class="ico">🎯</div>
+        <h3>自评状态 → 匹配强度</h3>
+        <p>开训前先自评：状态很好 / 一般 / 很差，App 匹配对应的训练强度模式。</p>
         <ul>
-          <li>右键菜单：选分类后收藏 / 分组直达</li>
-          <li>收藏内容直接进对应分组</li>
-          <li>桌面 / 浏览器分类双向实时同步</li>
-          <li>完全离线优先，服务器零存储</li>
+          <li>状态很好 → Max 强度（题量 30 · 新卡 60% · 间隔 ×1.1）</li>
+          <li>状态一般 → 中等强度（题量 20 · 新卡 35% · 间隔 ×1.0）</li>
+          <li>状态很差 → 轻松模式（题量 10 · 新卡 10% · 间隔 ×0.75）</li>
+          <li>强度同时影响时长上限，更贴合当下状态</li>
         </ul>
       </div>
       <div class="card fade">
         <div class="ico">🧠</div>
-        <h3>间隔重复引擎</h3>
-        <p>自研 SM-2 调度（纯函数、20+ 单测）：在对的时间复习，记忆效率最大化。</p>
+        <h3>SM-2 间隔重复</h3>
+        <p>训练 = 已下载训练集的新卡 + 到期卡片智能组队，闪卡先猜后看，三键评级。</p>
         <ul>
-          <li>闪卡先猜后看 + 三键评级</li>
-          <li>忘了 / 模糊 / 记得 → 自动调整间隔</li>
-          <li>断点续复习，随时退出不丢进度</li>
-          <li>review_log 全量留痕，可切 FSRS</li>
+          <li>忘了 / 模糊 / 记得 → 自动调整下次间隔</li>
+          <li>新卡与到期卡按强度比例混合进本轮</li>
+          <li>间隔增幅吃下行难度（Interval × 强度系数）</li>
+          <li>review_log 全量留痕，可平滑切 FSRS</li>
         </ul>
       </div>
       <div class="card fade">
-        <div class="ico">🌏</div>
-        <h3>主动学习 · 多语言</h3>
-        <p>专门的「学习」Tab：多语言词库，关卡递进解锁，生词一键进复习队列。</p>
+        <div class="ico">🏘️</div>
+        <h3>社区训练集</h3>
+        <p>自由选择训练类型：翻卡 / 单选 / 填空。点进详情，下载后即可在训练模块开练。</p>
         <ul>
-          <li>日语 / 英语免费，韩语 / 法语 / 西语 PRO</li>
-          <li>从基础开始循序渐进，解锁更难卡片</li>
-          <li>读音 / 释义 / TTS 朗读全自动</li>
-          <li>学完自动排入复习，闭环到 SM-2</li>
+          <li>翻卡 · 英语常用词 / 日语基础词</li>
+          <li>单选 · 趣味常识问答</li>
+          <li>填空 · 古诗词挖空补全</li>
+          <li>内置目录开箱即用，远程内容源已预留</li>
         </ul>
       </div>
       <div class="card fade">
         <div class="ico">📈</div>
         <h3>真实数据证明</h3>
-        <p>成长感来自真实复习记录，无法假装学会——曲线会说实话。</p>
+        <p>成长感来自真实训练记录，曲线会说实话——不是「刷了 N 题」，而是「记住了多少」。</p>
         <ul>
-          <li>遗忘曲线：个人正确率 vs 理论目标</li>
-          <li>掌握率、复习量、积压统计</li>
-          <li>状态从日志派生（投影原则）</li>
+          <li>遗忘曲线：个人正确率 vs 理论基线（周视图）</li>
+          <li>掌握率 / 今日已训练 / 积压统计</li>
+          <li>每日训练热力图（近 12 周）</li>
           <li>一键导出 JSON，数据随时带走</li>
         </ul>
       </div>
@@ -312,39 +349,74 @@
   </div>
 </section>
 
-<section class="alt" id="flow">
+<section class="alt" id="train">
   <div class="wrap">
     <div class="sec-head fade">
-      <h2>一句话看懂它怎么工作</h2>
-      <p>收藏即承诺——我收藏的东西，会被记忆教练替我记住。</p>
+      <h2>训练机制：强度怎么影响你的这一轮</h2>
+      <p>状态决定强度，强度决定这轮的「题量、新卡比例、间隔增幅、时长上限」四件事。</p>
     </div>
-    <div class="flow fade">
-      <div class="step"><div class="n">1</div><b>划词收藏</b><small>浏览器 / 手录 / 剪贴板</small></div>
+    <div class="dim fade">
+      <div class="d"><b>10~30</b><small>一轮题量</small></div>
+      <div class="d"><b>10%~60%</b><small>新卡占比</small></div>
+      <div class="d"><b>0.75~1.1×</b><small>SM-2 间隔</small></div>
+      <div class="d"><b>8~20 分</b><small>时长上限</small></div>
+    </div>
+    <div class="flow fade" style="margin-top:44px;">
+      <div class="step"><div class="n">1</div><b>自评状态</b><small>很好 / 一般 / 很差</small></div>
       <div class="arrow">→</div>
-      <div class="step"><div class="n">2</div><b>进分组</b><small>直接进对应分类</small></div>
+      <div class="step"><div class="n">2</div><b>匹配强度</b><small>Max / 中等 / 轻松</small></div>
       <div class="arrow">→</div>
-      <div class="step"><div class="n">3</div><b>云盘同步</b><small>WebDAV / iCloud，桌面秒级</small></div>
+      <div class="step"><div class="n">3</div><b>智能组队</b><small>新卡 + 到期卡</small></div>
       <div class="arrow">→</div>
-      <div class="step"><div class="n">4</div><b>复习</b><small>三键评级 · SM-2</small></div>
+      <div class="step"><div class="n">4</div><b>闪卡评级</b><small>忘了 / 模糊 / 记得</small></div>
       <div class="arrow">→</div>
-      <div class="step"><div class="n">5</div><b>证明</b><small>曲线 / 掌握率</small></div>
+      <div class="step"><div class="n">5</div><b>曲线证明</b><small>间隔重复 · 掌握率</small></div>
     </div>
   </div>
 </section>
 
-<section id="privacy">
+<section id="community">
+  <div class="wrap">
+    <div class="sec-head fade">
+      <h2>社区：想练什么，自己挑</h2>
+      <p>训练类型自由选择，点击进入详细介绍，感兴趣就下载训练集，然后在「训练」模块开始练习。</p>
+    </div>
+    <div class="grid3">
+      <div class="card fade">
+        <div class="ico">🔀</div>
+        <h3>翻卡（Flashcard）</h3>
+        <p>正经背词主力。英语高频词、日语 JLPT N5 基础词，先回忆、点卡看释义。</p>
+        <ul><li>答案在主卡面上，自评即可</li><li>自动进 SM-2 训练队列</li></ul>
+      </div>
+      <div class="card fade">
+        <div class="ico">🎯</div>
+        <h3>单选（Quiz）</h3>
+        <p>常识趣味问答，选项即时判分。答对的题也会进入复习循环，错题被重点押注。</p>
+        <ul><li>带解析，知其所以然</li><li>答错自动缩短下次间隔</li></ul>
+      </div>
+      <div class="card fade">
+        <div class="ico">✍️</div>
+        <h3>填空（Cloze）</h3>
+        <p>经典古诗词挖空补全，把「读过」变成「背得出」——文化素材的肌肉记忆。</p>
+        <ul><li>自动挖空，可试玩预览</li><li>对空即得分，进度可视化</li></ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="privacy">
   <div class="wrap">
     <div class="privacy fade">
       <div>
         <h2>数据默认属于你</h2>
-        <p>记忆教练把「拿不回数据」的担心当作首要设计约束：本地优先，隐私默认。</p>
-        <p>同步走进你自己的云盘（WebDAV / iCloud Drive），服务器永不存储你的任何数据与媒体文件——这是架构上的铁律，不是口头承诺。</p>
+        <p>Memcoach 把「拿不回数据」的担心当作首要设计约束：本地优先，隐私默认。</p>
+        <p>训练记录、掌握率、遗忘曲线默认只存在本机（drift/SQLite），随时可一键导出 JSON 拿走。</p>
       </div>
       <div class="list">
-        <div>📦 收藏与复习数据默认仅保存在本机</div>
+        <div>📦 训练数据默认仅保存在本机</div>
         <div>📤 一键导出 JSON，随时插拔</div>
-        <div>🔄 云盘同步：数据只进你的 WebDAV / iCloud</div>
-        <div>🧹 可编辑、可删除、删了就是删了（删除跨端同步）</div>
+        <div>🧹 可编辑、可删除，删了就是删了</div>
+        <div>🧠 无账号、无云强制，零追踪</div>
       </div>
     </div>
   </div>
@@ -359,16 +431,14 @@
     <div class="fade" style="overflow-x:auto;">
       <table>
         <tr><th>能力</th><th>状态</th><th>说明</th></tr>
-        <tr><td>分组即内容区（取消收件箱 / 记忆库聚合）</td><td><span class="tag now">已上线</span></td><td>收藏直接进工作 / 学习 / 未分类等分组，侧栏直达分组内容</td></tr>
-        <tr><td>浏览器划词收藏扩展</td><td><span class="tag now">已上线</span></td><td>右键直达分组，写入自有 WebDAV，桌面秒级出现</td></tr>
-        <tr><td>云盘同步（WebDAV / iCloud）</td><td><span class="tag now">已上线</span></td><td>多端合并、删除跨端同步；服务器 0 存储</td></tr>
-        <tr><td>SM-2 间隔重复 + 遗忘曲线</td><td><span class="tag now">已上线</span></td><td>三键评级、周视图正确率曲线</td></tr>
-        <tr><td>主动学习 · 多语言关卡</td><td><span class="tag now">已上线</span></td><td>日语 / 英语免费；韩语 / 法语 / 西语 PRO；TTS 朗读</td></tr>
-        <tr><td>主题切换（跟随系统 / 浅色 / 深色）</td><td><span class="tag now">已上线</span></td><td>iOS HIG 风格，全端一致</td></tr>
-        <tr><td>OCR 拍照收藏 / 系统分享面板</td><td><span class="tag next">V1.1</span></td><td>拍照进管道，图片存为卡面</td></tr>
+        <tr><td>自评状态 → 三档训练强度</td><td><span class="tag now">已上线</span></td><td>Max / 中等 / 轻松，影响题量、新卡比例、间隔增幅、时长上限</td></tr>
+        <tr><td>社区训练集（翻卡 / 单选 / 填空）</td><td><span class="tag now">已上线</span></td><td>内置古诗词 / 英语常用词 / 日语基础词 / 趣味常识，下载即训</td></tr>
+        <tr><td>SM-2 间隔重复 + 遗忘曲线</td><td><span class="tag now">已上线</span></td><td>三键评级、智能组队、周视图正确率曲线、热力图</td></tr>
+        <tr><td>主题切换（跟随系统 / 浅色 / 深色）</td><td><span class="tag now">已上线</span></td><td>iOS HIG 风格，桌面 / 移动一致</td></tr>
+        <tr><td>远程训练集目录</td><td><span class="tag next">V1.1</span></td><td>内置内容源之外接入远程下载，社区变真正的集市</td></tr>
         <tr><td>Anki 导入导出</td><td><span class="tag next">V1.1</span></td><td>标准牌组互通，数据零锁定</td></tr>
         <tr><td>FSRS 调度升级</td><td><span class="tag later">V2</span></td><td>数据积累后自动切换，间隔预测更精准</td></tr>
-        <tr><td>Windows / macOS 桌面端</td><td><span class="tag later">V2</span></td><td>全键盘复习，多端同一代码库</td></tr>
+        <tr><td>Windows / macOS 桌面端</td><td><span class="tag later">V2</span></td><td>全键盘训练，多端同一代码库</td></tr>
       </table>
     </div>
   </div>
@@ -377,20 +447,14 @@
 <section class="alt" id="download">
   <div class="wrap">
     <div class="sec-head fade">
-      <h2>下载记忆教练</h2>
+      <h2>下载 Memcoach</h2>
       <p>产物随每个 GitHub Release 自动构建发布。</p>
     </div>
     <div class="dl">
       <div class="card fade">
-        <div class="ico">🧩</div>
-        <h3>浏览器扩展</h3>
-        <p>Chrome / Edge（Manifest V3）：划词即收藏。</p>
-        <a class="btn" href="https://github.com/luskyle/memcoach/tree/main/browser-extension" target="_blank" rel="noopener">安装扩展</a>
-      </div>
-      <div class="card fade">
         <div class="ico">🤖</div>
         <h3>Android</h3>
-        <p>APK 直接安装，即刻开始收藏。</p>
+        <p>APK 直接安装，即刻开始训练。</p>
         <a class="btn" href="https://github.com/luskyle/memcoach/releases" target="_blank" rel="noopener">下载 APK</a>
       </div>
       <div class="card fade">
@@ -416,7 +480,7 @@
       <a href="https://github.com/luskyle/memcoach/releases" target="_blank" rel="noopener">Releases</a>
       <a href="https://github.com/luskyle/memcoach/issues" target="_blank" rel="noopener">反馈</a>
     </div>
-    <div>记忆教练 Memcoach —— 把你想记住的任何东西收进来。© 2026 · 本地优先，数据属于你。</div>
+    <div>记忆教练 Memcoach —— 自评状态，组队训练，真正记住。© 2026 · 免费开源 · 本地优先，数据属于你。</div>
   </div>
 </footer>
 

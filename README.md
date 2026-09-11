@@ -63,7 +63,7 @@ flutter run
   质量门禁 → 构建 Android APK / Linux tar.gz / iOS 未签名包 → 自动生成中文发布说明 →
   发布 GitHub Release（含全部产物；重复触发自动更新）
 - 发布说明由 `scripts/gen_release_notes.sh` 从 git log 按 Conventional Commits 分组生成
-- 官网（`docs/index.html`，纯静态、零构建依赖）：手动分支部署（Settings → Pages → `Deploy from a branch` → `main` / `docs`），不走 CI/CD
+- 官网（`docs/index.html`，纯静态、零构建依赖）：<https://luskyle.github.io/memcoach/>（GitHub Pages：Settings → Pages → `Deploy from a branch` → `main` / `docs`）
 
 发布前需在仓库配置（可选）：
 - GitHub Secrets（Android 正式签名，缺省时自动回退 debug 签名发布）：
